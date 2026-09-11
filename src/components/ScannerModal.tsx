@@ -169,14 +169,15 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
         throw new Error("No compliance analysis result was received from the server.");
       }
 
-      // Preserve the CURRENT uploaded image reference for immediate and infallible rendering
+      // Preserve the CURRENT uploaded image reference for immediate and fallback rendering
       const currentUploadRef = capturedImageDataUrl || (selectedFile ? URL.createObjectURL(selectedFile) : '');
-      if (currentUploadRef) {
+      if (!productResult.sourceImageUrl || productResult.sourceImageUrl === 'N/A') {
         productResult.sourceImageUrl = currentUploadRef;
-        if (!productResult.imageUrl || productResult.imageUrl === 'N/A') {
-          productResult.imageUrl = currentUploadRef;
-        }
       }
+      if (!productResult.imageUrl || productResult.imageUrl === 'N/A') {
+        productResult.imageUrl = currentUploadRef;
+      }
+
 
       // Finish analysis cleanly with real backend results
       setTimeout(() => {

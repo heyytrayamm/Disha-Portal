@@ -27,7 +27,7 @@ class ScanRecord(Base):
     detected_min_font_mm = Column(Float, nullable=False, default=2.0)
     
     # Score & Status
-    overall_score = Column(Float, nullable=True, default=100.0)
+    overall_score = Column(Float, nullable=True, default=None)
     overall_status = Column(String, nullable=False, default="COMPLIANT") # COMPLIANT, NON_COMPLIANT, NEEDS_REVIEW, UNABLE_TO_ASSESS
     enforcement_status = Column(String, nullable=False, default="UNDER_INSPECTION") # UNDER_INSPECTION, NOTICE_ISSUED, CLOSED_COMPLIANT, UNABLE_TO_ASSESS
     
@@ -35,6 +35,19 @@ class ScanRecord(Base):
     critical_violations = Column(Integer, default=0)
     major_violations = Column(Integer, default=0)
     minor_violations = Column(Integer, default=0)
+    passed_count = Column(Integer, default=0)
+    failed_count = Column(Integer, default=0)
+
+    # Detailed Persistence & Audit Fields (Part 6)
+    inspection_id = Column(String, nullable=True, index=True)
+    inspector_id = Column(String, nullable=True, default="officer-01")
+    original_filename = Column(String, nullable=True)
+    source_image_url = Column(String, nullable=True)
+    ocr_text = Column(String, nullable=True)
+    normalized_fields = Column(JSON, nullable=True)
+    remarks = Column(String, nullable=True)
+    recommendation = Column(String, nullable=True)
+    quality_metrics = Column(JSON, nullable=True)
 
     # Relationships
     extracted_fields = relationship("ExtractedFieldRecord", back_populates="scan", cascade="all, delete-orphan")

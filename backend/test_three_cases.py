@@ -1,8 +1,17 @@
 import os
+import sys
 import json
-import urllib.request
-import urllib.error
 import uuid
+
+# Ensure backend directory is in sys.path
+backend_dir = os.path.abspath(os.path.dirname(__file__))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+from starlette.testclient import TestClient
+from app.main import app
+
+client = TestClient(app)
 
 def upload_and_inspect(filepath, case_name):
     print("\n" + "="*60)
@@ -12,73 +21,35 @@ def upload_and_inspect(filepath, case_name):
 
     if not os.path.exists(filepath):
         print(f"Error: file not found at {filepath}")
-        return
+        return None
 
-    # Try live HTTP server first, fallback to FastAPI TestClient
-    status_code = None
-    res_data = None
-
-    try:
-        boundary = f"----WebKitFormBoundary{uuid.uuid4().hex}"
-        with open(filepath, "rb") as f:
-            file_bytes = f.read()
-
-        body = bytearray()
-        body.extend(f"--{boundary}\r\n".encode())
-        body.extend(f'Content-Disposition: form-data; name="file"; filename="{os.path.basename(filepath)}"\r\n'.encode())
-        body.extend(b"Content-Type: image/jpeg\r\n\r\n")
-        body.extend(file_bytes)
-        body.extend(b"\r\n")
-
-        body.extend(f"--{boundary}\r\n".encode())
-        body.extend(b'Content-Disposition: form-data; name="inspectorName"\r\n\r\nLegal Metrology Inspector\r\n')
-
-        body.extend(f"--{boundary}\r\n".encode())
-        body.extend(b'Content-Disposition: form-data; name="inspectorLocation"\r\n\r\nZone 4 Inspection Unit\r\n')
-
-        body.extend(f"--{boundary}\r\n".encode())
-        body.extend(b'Content-Disposition: form-data; name="isImported"\r\n\r\nfalse\r\n')
-
-        body.extend(f"--{boundary}\r\n".encode())
-        body.extend(b'Content-Disposition: form-data; name="pdpAreaCm2"\r\n\r\n180.0\r\n')
-
-        body.extend(f"--{boundary}--\r\n".encode())
-
-        req = urllib.request.Request("http://127.0.0.1:8000/api/v1/scan/upload", data=bytes(body))
-        req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
-
-        with urllib.request.urlopen(req, timeout=5) as response:
-            status_code = response.getcode()
-            res_data = json.loads(response.read().decode())
-    except Exception:
-        # Fallback to direct in-memory FastAPI TestClient
-        from starlette.testclient import TestClient
-        from app.main import app
-
-        client = TestClient(app)
-        with open(filepath, "rb") as f:
-            files = {"file": (os.path.basename(filepath), f.read(), "image/jpeg")}
-            data = {
-                "inspectorName": "Legal Metrology Inspector",
-                "inspectorLocation": "Zone 4 Inspection Unit",
-                "isImported": "false",
-                "pdpAreaCm2": "180.0"
-            }
-            res = client.post("/api/v1/scan/upload", files=files, data=data)
-            status_code = res.status_code
-            res_data = res.json()
+    with open(filepath, "rb") as f:
+        files = {"file": (os.path.basename(filepath), f.read(), "image/jpeg")}
+        data = {
+            "inspectorName": "Legal Metrology Inspector",
+            "inspectorLocation": "Zone 4 Inspection Unit",
+            "isImported": "false",
+            "pdpAreaCm2": "180.0"
+        }
+        res = client.post("/api/v1/scan/upload", files=files, data=data)
+        status_code = res.status_code
+        res_data = res.json()
 
     print(f"HTTP Status: {status_code}")
     print(f"Status: {res_data.get('status')}")
     print(f"Is Product Label: {res_data.get('is_product_label')}")
     print(f"Score: {res_data.get('score')}")
     print(f"Message: {res_data.get('message')}")
+    print(f"DB Saved: {res_data.get('dbSaved')}")
 
     prod = res_data.get("product", {})
+    inspection_id = prod.get("id")
+    print(f"Inspection ID: {inspection_id}")
     print(f"Product Name: {prod.get('productName')}")
     print(f"Manufacturer: {prod.get('manufacturerName')}")
     print(f"Overall Status: {prod.get('overallStatus')}")
     print(f"Overall Score: {prod.get('overallScore')}")
+    print(f"Image URL: {prod.get('imageUrl')}")
     print("Detected Fields:")
     for field in prod.get("extractedFields", []):
         cat = field['category']
@@ -86,11 +57,35 @@ def upload_and_inspect(filepath, case_name):
         missing = field.get('isMissing', False)
         print(f"  * [{cat}] {field['fieldName']}: {parsed} (Missing={missing})")
 
-if __name__ == "__main__":
-    case_a = "uploads/df0b1ba0e2_photo_2026-09-10_04-18-37 (2).jpg"
-    case_b = "uploads/87b0ad6758_WhatsApp Image 2026-09-11 at 2.07.42 PM.jpeg"
-    case_c = "test_face.jpg"
+    # TEST PERSISTENCE: Retrieve from PostgreSQL via /inspections and /inspections/{id}
+    if inspection_id:
+        print(f"\n[PERSISTENCE CHECK] Fetching GET /inspections/{inspection_id}...")
+        get_res = client.get(f"/inspections/{inspection_id}")
+        if get_res.status_code == 200:
+            saved_doc = get_res.json()
+            print(f"[SUCCESS] Record successfully retrieved from DB! Product: {saved_doc.get('productName')}, Score: {saved_doc.get('overallScore')}")
+        else:
+            print(f"[FAIL] GET /inspections/{inspection_id} returned status {get_res.status_code}")
 
-    upload_and_inspect(case_a, "CASE A: GREEN TEA PACKAGE (USER UPLOAD)")
-    upload_and_inspect(case_b, "CASE B: CHIA SEEDS PACKAGE (DIFFERENT PRODUCT)")
-    upload_and_inspect(case_c, "CASE C: FACE / SELFIE (NON-COMMODITY)")
+    return res_data
+
+if __name__ == "__main__":
+    case_a = os.path.join(backend_dir, "uploads", "df0b1ba0e2_photo_2026-09-10_04-18-37 (2).jpg")
+    case_b = os.path.join(backend_dir, "uploads", "87b0ad6758_WhatsApp Image 2026-09-11 at 2.07.42 PM.jpeg")
+    case_c = os.path.join(backend_dir, "uploads", "043fdd8283_test_face.jpg")
+
+    res_a = upload_and_inspect(case_a, "TEST A: GREEN TEA PACKAGE (REAL USER IMAGE)")
+    res_b = upload_and_inspect(case_b, "TEST B: CHIA SEEDS PACKAGE (DIFFERENT PRODUCT)")
+    res_c = upload_and_inspect(case_c, "TEST C: FACE / SELFIE (NON-COMMODITY)")
+
+    # TEST D: Verify GET /inspections lists all saved records
+    print("\n" + "="*60)
+    print("TEST D: VERIFYING /inspections ENDPOINT (DATABASE HISTORY)")
+    print("="*60)
+    list_res = client.get("/inspections")
+    print(f"GET /inspections status: {list_res.status_code}")
+    if list_res.status_code == 200:
+        data = list_res.json()
+        print(f"Total persisted inspections in DB: {data.get('count')}")
+        for item in data.get('inspections', [])[:5]:
+            print(f"  - [{item.get('id')}] {item.get('productName')} | Status: {item.get('overallStatus')} | Score: {item.get('overallScore')}")

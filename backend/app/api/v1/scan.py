@@ -48,6 +48,15 @@ def _execute_label_inspection(
     processed_binary, metadata, stages_b64 = ImagePreprocessor.preprocess_image_with_stages(raw_img)
     dims = metadata.get("dimensions", {})
 
+    # Part 2: Required safe temporary logging for scan reception
+    logger.info(
+        f"SCAN RECEIVED\n"
+        f"filename={file_name}\n"
+        f"content_type={content_type}\n"
+        f"file_size={file_size_bytes}\n"
+        f"image_dimensions={dims.get('width', 0)}x{dims.get('height', 0)}"
+    )
+
     # 2. OCR Text Extraction (PaddleOCR / RapidOCR / Tesseract)
     # Deep-learning OCR models (PaddleOCR/RapidOCR) perform optimal detection on color imagery
     ocr_items = ocr_engine.extract_text_and_boxes(raw_img, file_name=file_name)
@@ -59,18 +68,18 @@ def _execute_label_inspection(
 
     full_text = " ".join([item.get("text", "") for item in ocr_items])
 
-    # Requirement 10: Temporary backend logging
+    # Part 2: Required safe temporary logging for OCR result
+    safe_preview = full_text[:300].encode('ascii', errors='replace').decode('ascii')
     logger.info(
-        f"[SCAN_AUDIT] Filename: '{file_name}', Dimensions: {dims.get('width', 0)}x{dims.get('height', 0)}, "
-        f"OCR text length: {len(full_text)}, OCR items: {len(ocr_items)}"
+        f"OCR RESULT\n"
+        f"text_length={len(full_text)}\n"
+        f"text_preview={safe_preview}"
     )
-    safe_preview = full_text[:140].encode('ascii', errors='replace').decode('ascii')
-    logger.info(f"[SCAN_AUDIT] OCR preview: {safe_preview}")
 
-    # 3. Product Label Validation Check
+    # 3. Product Label Validation Check (determines whether image is a genuine commodity label)
     is_valid_label = FieldExtractor.is_packaged_commodity_label(ocr_items, full_text)
 
-    # 4. Structured Field Extraction
+    # 4. Structured Field Extraction from OCR text
     extracted_fields = FieldExtractor.extract_structured_fields(
         ocr_items,
         file_name=file_name,
@@ -79,15 +88,22 @@ def _execute_label_inspection(
 
     scan_id = f"LM-2026-{uuid.uuid4().hex[:6].upper()}"
 
-    # If NOT a genuine packaged commodity label (e.g., face, landscape, blank, document)
+    # If NOT a genuine packaged commodity label (e.g., face, landscape, selfie, document)
     if not is_valid_label:
-        logger.warning(
-            f"[SCAN_VALIDATION] '{file_name}' does not contain readable packaged commodity declarations. "
-            f"Detected {len(ocr_items)} text blocks, text length: {len(full_text.strip())}. Marking UNABLE_TO_ASSESS."
+        logger.info(
+            f"ANALYSIS\n"
+            f"status=UNABLE_TO_ASSESS\n"
+            f"score=null"
         )
 
         scan_record = ScanRecord(
             id=scan_id,
+            inspection_id=scan_id,
+            inspector_id="officer-01",
+            original_filename=file_name,
+            source_image_url=image_url,
+            ocr_text=full_text,
+            normalized_fields=[],
             barcode=None,
             product_name="Unidentified Non-Label Image",
             brand_name="N/A",
@@ -102,38 +118,53 @@ def _execute_label_inspection(
             package_type="UNKNOWN",
             min_required_font_mm=0.0,
             detected_min_font_mm=0.0,
-            overall_score=None,
+            overall_score=-1.0, # Sentinel for non-label/null score to satisfy legacy DB constraints
             overall_status="UNABLE_TO_ASSESS",
             enforcement_status="UNABLE_TO_ASSESS",
+
             critical_violations=0,
             major_violations=0,
-            minor_violations=0
+            minor_violations=0,
+            passed_count=0,
+            failed_count=0,
+            remarks="Image does not appear to contain a readable packaged commodity label.",
+            recommendation="Please upload a clear product label image.",
+            quality_metrics={"width": dims.get("width", 0), "height": dims.get("height", 0), "ocrBlocks": len(ocr_items)}
         )
         db.add(scan_record)
 
-        for field in extracted_fields:
-            field_rec = ExtractedFieldRecord(
-                scan_id=scan_id,
-                category=field["category"],
-                field_name=field["fieldName"],
-                raw_value=str(field["rawValue"]),
-                parsed_value=str(field["parsedValue"]) if field.get("parsedValue") is not None else None,
-                confidence=field.get("confidence", 0.0),
-                bounding_box=field.get("boundingBox"),
-                estimated_font_height_mm=field.get("estimatedFontHeightMm"),
-                is_missing="true" if field.get("isMissing") else "false"
+        # Do not persist fake fields for non-label images
+        db_saved = False
+        try:
+            db.commit()
+            db_saved = True
+            logger.info(
+                f"DATABASE\n"
+                f"inspection_saved=true\n"
+                f"inspection_id={scan_id}"
             )
-            db.add(field_rec)
-
-        db.commit()
+        except Exception as db_err:
+            db.rollback()
+            logger.error(f"Database save error for non-label scan: {db_err}")
+            logger.info(
+                f"DATABASE\n"
+                f"inspection_saved=false\n"
+                f"inspection_id={scan_id}"
+            )
 
         validation_msg = (
             "The uploaded image does not appear to contain a readable packaged commodity label. "
             "Please upload a clear product-label image."
         )
+        if not db_saved:
+            validation_msg += " (Notice: Scan analyzed but could not be saved to inspection history.)"
 
         response_product = {
             "id": scan_id,
+            "inspection_id": scan_id,
+            "inspectionId": scan_id,
+            "scan_id": scan_id,
+            "scanId": scan_id,
             "barcode": None,
             "productName": "Unidentified Non-Label Image",
             "brandName": "N/A",
@@ -142,8 +173,11 @@ def _execute_label_inspection(
             "countryOfOrigin": "N/A",
             "imageUrl": image_url,
             "sourceImageUrl": image_url,
+            "originalFilename": file_name,
             "scannedAt": scan_record.scanned_at.isoformat(),
+            "timestamp": scan_record.scanned_at.isoformat(),
             "inspectorName": scan_record.inspector_name,
+            "inspectorId": "officer-01",
             "inspectorLocation": scan_record.inspector_location,
             "dimensions": {
                 "pdpAreaCm2": pdp_area,
@@ -151,13 +185,23 @@ def _execute_label_inspection(
                 "minRequiredFontHeightMm": 0.0,
                 "detectedMinFontHeightMm": 0.0
             },
-            "extractedFields": extracted_fields,
+            "extractedFields": [],
+            "normalizedFields": [],
             "ruleChecks": [],
             "overallScore": None,
             "overallStatus": "UNABLE_TO_ASSESS",
+            "score": None,
+            "status": "UNABLE_TO_ASSESS",
             "violationsCount": {"critical": 0, "major": 0, "minor": 0},
+            "passedCount": 0,
+            "failedCount": 0,
+            "remarks": scan_record.remarks,
+            "recommendation": scan_record.recommendation,
+            "qualityMetrics": scan_record.quality_metrics,
+            "ocrText": full_text,
             "enforcementStatus": "UNABLE_TO_ASSESS",
             "isProductLabel": False,
+            "dbSaved": db_saved,
             "message": validation_msg
         }
 
@@ -180,19 +224,18 @@ def _execute_label_inspection(
         if ai_data:
             extracted_fields = FieldExtractor.merge_ai_declarations(extracted_fields, ai_data)
 
-    # Safe debugging audit log (Requirement 10: safe fields only, no credentials)
-    logger.info(
-        f"[SCAN_AUDIT] filename='{file_name}' content_type='{content_type}' "
-        f"dimensions={dims.get('width', 0)}x{dims.get('height', 0)} "
-        f"ocr_text_length={len(full_text)} ai_provider='{ox_alpha_service.provider_name}' "
-        f"ai_fallback_triggered={ai_triggered}"
-    )
-
-    # 5. Rule Evaluation for verified packaged commodity
+    # 5. Deterministic Rule Evaluation for verified packaged commodity
     rule_checks, summary = ComplianceEngine.evaluate_compliance(
         extracted_fields,
         pdp_area_cm2=pdp_area,
         is_imported=is_imported
+    )
+
+    # Part 2: Required safe temporary logging for Analysis
+    logger.info(
+        f"ANALYSIS\n"
+        f"status={summary['overallStatus']}\n"
+        f"score={summary['overallScore']}"
     )
 
     min_required_font = get_min_required_font_height_mm(pdp_area)
@@ -205,13 +248,34 @@ def _execute_label_inspection(
     origin_field = next((f for f in extracted_fields if f["category"] == "COUNTRY_OF_ORIGIN" and not f.get("isMissing")), None)
 
     real_mfr = str(mfr_field.get("parsedValue") or mfr_field.get("rawValue")) if mfr_field else "Not Specified"
-    real_cmd = str(cmd_field.get("parsedValue") or cmd_field.get("rawValue")) if cmd_field else file_name.replace(".jpg", "").replace(".png", "").replace("_", " ").title()
+    real_cmd = str(cmd_field.get("parsedValue") or cmd_field.get("rawValue")) if cmd_field else file_name.replace(".jpg", "").replace(".png", "").replace(".jpeg", "").replace(".webp", "").replace("_", " ").title()
     real_origin = str(origin_field.get("parsedValue") or origin_field.get("rawValue")) if origin_field else ("Germany" if is_imported else "India")
     real_brand = real_cmd
+
+    passed_count = len([c for c in rule_checks if c["status"] == "PASS"])
+    failed_count = len([c for c in rule_checks if c["status"] == "FAIL"])
+    remarks_text = f"Compliance Score: {summary['overallScore']}%. Status: {summary['overallStatus']} ({passed_count} passed, {failed_count} failed)."
+    recommendation_text = (
+        "Statutory declarations compliant with Legal Metrology (Packaged Commodities) Rules, 2011."
+        if summary["overallStatus"] == "COMPLIANT"
+        else "Issue statutory notice or rectifications under Rule 6 / Section 36 of Legal Metrology Act, 2009."
+    )
+    quality_metrics_dict = {
+        "width": dims.get("width", 0),
+        "height": dims.get("height", 0),
+        "ocrBlocks": len(ocr_items),
+        "aiConsulted": ai_triggered
+    }
 
     # 6. Database Persistence
     scan_record = ScanRecord(
         id=scan_id,
+        inspection_id=scan_id,
+        inspector_id="officer-01",
+        original_filename=file_name,
+        source_image_url=image_url,
+        ocr_text=full_text,
+        normalized_fields=extracted_fields,
         barcode=f"890{random.randint(1000000000, 9999999999)}",
         product_name=real_cmd,
         brand_name=real_brand,
@@ -231,7 +295,12 @@ def _execute_label_inspection(
         enforcement_status="UNDER_INSPECTION" if summary["overallStatus"] == "NON_COMPLIANT" else "CLOSED_COMPLIANT",
         critical_violations=summary["violationsCount"]["critical"],
         major_violations=summary["violationsCount"]["major"],
-        minor_violations=summary["violationsCount"]["minor"]
+        minor_violations=summary["violationsCount"]["minor"],
+        passed_count=passed_count,
+        failed_count=failed_count,
+        remarks=remarks_text,
+        recommendation=recommendation_text,
+        quality_metrics=quality_metrics_dict
     )
     db.add(scan_record)
 
@@ -268,10 +337,31 @@ def _execute_label_inspection(
         )
         db.add(check_rec)
 
-    db.commit()
+    # Part 8: Safe Database Commit Handling
+    db_saved = False
+    try:
+        db.commit()
+        db_saved = True
+        logger.info(
+            f"DATABASE\n"
+            f"inspection_saved=true\n"
+            f"inspection_id={scan_id}"
+        )
+    except Exception as db_err:
+        db.rollback()
+        logger.error(f"Failed to persist inspection to database: {db_err}")
+        logger.info(
+            f"DATABASE\n"
+            f"inspection_saved=false\n"
+            f"inspection_id={scan_id}"
+        )
 
     response_product = {
         "id": scan_id,
+        "inspection_id": scan_id,
+        "inspectionId": scan_id,
+        "scan_id": scan_id,
+        "scanId": scan_id,
         "barcode": scan_record.barcode,
         "productName": scan_record.product_name,
         "brandName": scan_record.brand_name,
@@ -280,8 +370,11 @@ def _execute_label_inspection(
         "countryOfOrigin": scan_record.country_of_origin,
         "imageUrl": scan_record.image_url,
         "sourceImageUrl": scan_record.image_url,
+        "originalFilename": file_name,
         "scannedAt": scan_record.scanned_at.isoformat(),
+        "timestamp": scan_record.scanned_at.isoformat(),
         "inspectorName": scan_record.inspector_name,
+        "inspectorId": "officer-01",
         "inspectorLocation": scan_record.inspector_location,
         "dimensions": {
             "pdpAreaCm2": pdp_area,
@@ -290,23 +383,41 @@ def _execute_label_inspection(
             "detectedMinFontHeightMm": detected_font
         },
         "extractedFields": extracted_fields,
+        "normalizedFields": extracted_fields,
         "ruleChecks": rule_checks,
         "overallScore": summary["overallScore"],
         "overallStatus": summary["overallStatus"],
+        "score": summary["overallScore"],
+        "status": summary["overallStatus"],
         "violationsCount": summary["violationsCount"],
+        "passedCount": passed_count,
+        "failedCount": failed_count,
+        "remarks": remarks_text,
+        "recommendation": recommendation_text,
+        "qualityMetrics": quality_metrics_dict,
+        "ocrText": full_text,
         "enforcementStatus": scan_record.enforcement_status,
-        "isProductLabel": True
+        "isProductLabel": True,
+        "dbSaved": db_saved
     }
 
+    result_message = (
+        "Packaging label successfully scanned and evaluated against Legal Metrology Rules, 2011."
+        if db_saved
+        else "Scan analyzed but could not be saved to inspection history."
+    )
+
     return {
-        "message": "Packaging label successfully scanned and evaluated against Legal Metrology Rules, 2011.",
+        "message": result_message,
         "opencvMetadata": metadata,
         "preprocessingStages": stages_b64,
         "product": response_product,
         "status": summary["overallStatus"],
         "is_product_label": True,
-        "score": summary["overallScore"]
+        "score": summary["overallScore"],
+        "dbSaved": db_saved
     }
+
 
 
 @router.post("", response_model=dict, status_code=201)
@@ -340,11 +451,22 @@ def scan_packaging_label(payload: ScanRequestSchema, db: Session = Depends(get_d
     elif payload.imageUrl.startswith("data:image/webp") or file_name.lower().endswith(".webp"):
         content_type = "image/webp"
 
+    # Save to persistent file storage so inspection image is accessible via URL
+    saved_image_url = payload.imageUrl
+    try:
+        if payload.imageUrl.startswith("data:"):
+            import base64
+            _, b64data = payload.imageUrl.split(",", 1)
+            raw_bytes = base64.b64decode(b64data)
+            saved_image_url = storage_service.save_file(raw_bytes, filename=file_name, folder="uploads")
+    except Exception as save_err:
+        logger.warning(f"Could not save base64 image to storage: {save_err}")
+
     return _execute_label_inspection(
         raw_img=raw_img,
         file_name=file_name,
         file_size_bytes=len(payload.imageUrl),
-        image_url=payload.imageUrl,
+        image_url=saved_image_url,
         inspector=inspector,
         location=location,
         is_imported=is_imported,
@@ -352,6 +474,7 @@ def scan_packaging_label(payload: ScanRequestSchema, db: Session = Depends(get_d
         db=db,
         content_type=content_type
     )
+
 
 
 @router.post("/upload", response_model=dict, status_code=201)

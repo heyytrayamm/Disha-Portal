@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import type { ScannedProduct } from '../types/metrology';
 import type { User } from '../types/auth';
-import { generateInitialSampleProducts } from '../services/sampleDataService';
 import { generateInspectionPdfReport } from '../services/pdfReportService';
+
 import { getProductCanonicalStatus } from '../services/complianceStatusHelper';
 
 interface RepositoryViewProps {
@@ -22,12 +22,11 @@ export const RepositoryView: React.FC<RepositoryViewProps> = ({
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'COMPLIANT' | 'NON_COMPLIANT'>('ALL');
   const [dateFilter, setDateFilter] = useState<DateFilterType>('30_DAYS');
 
-  // 1. ONE SINGLE SOURCE OF TRUTH DATASET (Derived from central inspection records)
+  // 1. ONE SINGLE SOURCE OF TRUTH DATASET (Derived from real PostgreSQL inspection records)
   const displayProducts = useMemo(() => {
-    return initialProducts && initialProducts.length > 0
-      ? initialProducts
-      : generateInitialSampleProducts();
+    return initialProducts || [];
   }, [initialProducts]);
+
 
   // 2. DYNAMIC REAL-TIME STATISTICS (Identical to Dashboard metrics)
   const stats = useMemo(() => {

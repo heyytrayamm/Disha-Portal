@@ -14,12 +14,51 @@ from app.api.router import api_router
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("fastapi_app")
 
+def ensure_schema_migrations():
+    """
+    Safely checks and adds any missing columns to existing tables
+    without dropping or modifying existing data.
+    Works seamlessly on both PostgreSQL and SQLite.
+    """
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(engine)
+        table_names = inspector.get_table_names()
+        if "scan_records" in table_names:
+            existing_columns = {c["name"] for c in inspector.get_columns("scan_records")}
+            new_columns = [
+                ("inspection_id", "VARCHAR(255)"),
+                ("inspector_id", "VARCHAR(255)"),
+                ("original_filename", "VARCHAR(255)"),
+                ("source_image_url", "TEXT"),
+                ("ocr_text", "TEXT"),
+                ("normalized_fields", "JSON"),
+                ("passed_count", "INTEGER DEFAULT 0"),
+                ("failed_count", "INTEGER DEFAULT 0"),
+                ("remarks", "TEXT"),
+                ("recommendation", "TEXT"),
+                ("quality_metrics", "JSON"),
+            ]
+            with engine.connect() as conn:
+                for col_name, col_type in new_columns:
+                    if col_name not in existing_columns:
+                        try:
+                            conn.execute(text(f"ALTER TABLE scan_records ADD COLUMN {col_name} {col_type}"))
+                            conn.commit()
+                            logger.info(f"Safely added column '{col_name}' to scan_records.")
+                        except Exception as col_err:
+                            logger.debug(f"Column '{col_name}' already exists or cannot be added: {col_err}")
+    except Exception as e:
+        logger.warning(f"Schema auto-migration check notice: {e}")
+
 # Initialize database tables
 try:
     Base.metadata.create_all(bind=engine)
-    logger.info("Database tables initialized successfully.")
+    ensure_schema_migrations()
+    logger.info("Database tables initialized and migrated successfully.")
 except Exception as e:
     logger.error(f"Error creating DB tables: {e}")
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -59,8 +98,15 @@ if os.path.exists(settings.REPORT_DIR):
     app.mount("/static/reports", StaticFiles(directory=settings.REPORT_DIR), name="reports")
     app.mount("/reports", StaticFiles(directory=settings.REPORT_DIR), name="reports_root")
 
+from app.api.v1 import inspections
+
 # Include V1 Router
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Also mount /inspections directly at root for Part 9 requirement:
+# GET /inspections -> actual records
+# GET /inspections/{id} -> actual saved inspection
+app.include_router(inspections.router, prefix="/inspections")
 
 @app.get("/api/health")
 def health_check():

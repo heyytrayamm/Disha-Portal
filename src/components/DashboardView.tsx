@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { ScannedProduct, ComplianceStats } from '../types/metrology';
 import type { User } from '../types/auth';
-import { generateInitialSampleProducts } from '../services/sampleDataService';
 import { getProductCanonicalStatus, normalizeComplianceStatus } from '../services/complianceStatusHelper';
+
 import { resolveImageUrl } from '../services/api';
 
 interface DashboardViewProps {
@@ -27,12 +27,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStat, setSelectedStat] = useState<StatDetailType>(null);
 
-  // 1. ONE SINGLE SOURCE OF TRUTH DATASET
+  // 1. ONE SINGLE SOURCE OF TRUTH DATASET (Strictly from real database inspections)
   const displayProducts = useMemo(() => {
-    return initialProducts && initialProducts.length > 0 
-      ? initialProducts 
-      : generateInitialSampleProducts();
+    return initialProducts || [];
   }, [initialProducts]);
+
 
   // Close modal on Escape key press
   useEffect(() => {

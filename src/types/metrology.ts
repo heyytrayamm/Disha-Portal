@@ -57,6 +57,9 @@ export interface PackageDimensions {
 
 export interface ScannedProduct {
   id: string;
+  inspection_id?: string;
+  inspectionId?: string;
+  originalFilename?: string;
   barcode?: string;
   productName: string;
   brandName: string;
@@ -100,9 +103,10 @@ export interface ComplianceStats {
   passPercentage: number;
   noticesIssued: number;
   totalPenaltiesCollected: number;
-  violationsByCategory: Record<DeclarationCategory, number>;
+  violationsByCategory: Partial<Record<DeclarationCategory, number>> | Record<string, number>;
   monthlyTrends: { month: string; compliant: number; nonCompliant: number }[];
   topNonCompliantBrands: { brand: string; violationsCount: number; passRate: number }[];
 }
+
 
 export type ActiveTab = 'dashboard' | 'scan' | 'repository' | 'rules' | 'users';

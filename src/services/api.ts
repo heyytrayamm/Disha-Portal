@@ -1,5 +1,5 @@
 import type { ScannedProduct, ComplianceStats } from '../types/metrology';
-import { generateInitialSampleProducts, getSampleComplianceStats } from './sampleDataService';
+
 
 const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 export const API_ROOT = RAW_API_URL.replace(/\/+$/, '');
@@ -67,50 +67,79 @@ export class ApiService {
         return data;
       }
     } catch (e) {
-      console.warn("FastAPI backend offline, using historical sample analytics.");
+      console.warn("Backend dashboard stats offline or error:", e);
     }
-    return getSampleComplianceStats();
+    return {
+      totalScanned: 0,
+      totalCompliant: 0,
+      totalNonCompliant: 0,
+      passPercentage: 100,
+      noticesIssued: 0,
+      totalPenaltiesCollected: 0,
+      violationsByCategory: {},
+      monthlyTrends: [],
+      topNonCompliantBrands: []
+    };
   }
 
+  /**
+   * Fetches real inspection records persisted in PostgreSQL.
+   * Throws an error if backend is unreachable, without inventing mock data.
+   */
   static async fetchProducts(query?: string, status?: string, category?: string): Promise<ScannedProduct[]> {
-    try {
-      const params = new URLSearchParams();
-      if (query) params.append('query', query);
-      if (status && status !== 'ALL') params.append('status', status);
-      if (category && category !== 'ALL') params.append('category', category);
+    const params = new URLSearchParams();
+    if (query) params.append('query', query);
+    if (status && status !== 'ALL') params.append('status', status);
+    if (category && category !== 'ALL') params.append('category', category);
 
-      const res = await fetch(`${API_BASE_URL}/products?${params.toString()}`, { headers: this.getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        return (data.products || []).map((p: ScannedProduct) => this.normalizeProduct(p));
+    let res: Response;
+    try {
+      res = await fetch(`${API_ROOT}/inspections?${params.toString()}`, { headers: this.getHeaders() });
+      if (!res.ok) {
+        res = await fetch(`${API_BASE_URL}/products?${params.toString()}`, { headers: this.getHeaders() });
       }
     } catch (e) {
-      console.warn("FastAPI backend offline, displaying cached repository items.");
+      throw new Error(`Cannot connect to compliance server at ${API_ROOT}. Please check your backend connection.`);
     }
-    
-    let sample = generateInitialSampleProducts();
-    if (status && status !== 'ALL') sample = sample.filter(s => s.overallStatus === status);
-    if (category && category !== 'ALL') sample = sample.filter(s => s.category === category);
-    if (query) {
-      const q = query.toLowerCase();
-      sample = sample.filter(s => s.productName.toLowerCase().includes(q) || s.brandName.toLowerCase().includes(q) || s.id.toLowerCase().includes(q));
+
+    if (!res.ok) {
+      throw new Error(`Failed to load inspections from database (status ${res.status}).`);
     }
-    return sample;
+
+    const data = await res.json();
+    const list = data.inspections || data.products || [];
+    return list.map((p: ScannedProduct) => this.normalizeProduct(p));
   }
 
+  /**
+   * Fetches persistent inspection record by ID from PostgreSQL.
+   * Survives browser refresh and never falls back to mock demo records.
+   */
   static async fetchProductById(id: string): Promise<ScannedProduct | null> {
+    return this.fetchInspectionById(id);
+  }
+
+  static async fetchInspectionById(id: string): Promise<ScannedProduct | null> {
+    if (!id) return null;
+    let res: Response;
     try {
-      const res = await fetch(`${API_BASE_URL}/products/${id}`, { headers: this.getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        return this.normalizeProduct(data);
+      res = await fetch(`${API_ROOT}/inspections/${encodeURIComponent(id)}`, { headers: this.getHeaders() });
+      if (!res.ok) {
+        res = await fetch(`${API_BASE_URL}/products/${encodeURIComponent(id)}`, { headers: this.getHeaders() });
       }
     } catch (e) {
-      // Offline fallback
+      throw new Error(`Cannot connect to compliance server at ${API_ROOT} to load inspection '${id}'.`);
     }
-    const sample = generateInitialSampleProducts().find(s => s.id === id);
-    return sample || null;
+
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new Error(`Inspection '${id}' could not be loaded from database (status ${res.status}).`);
+    }
+
+    const data = await res.json();
+    return this.normalizeProduct(data);
   }
+
 
   /**
    * Upload image file to real backend OCR pipeline.
