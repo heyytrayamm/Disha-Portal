@@ -86,12 +86,16 @@ class FieldExtractor:
 
     @staticmethod
     def _find_commodity_name(ocr_items: List[Dict[str, Any]], full_text: str, file_name: str = "") -> Dict[str, Any]:
-        # 1. Explicit commodity pattern
-        pattern = r'(?:commodity|product|item|name)\s*:\s*([A-Za-z0-9\s\-]+)'
+        # 1. Explicit commodity pattern (requires word boundary and colon/separator)
+        pattern = r'\b(?:commodity|product\s*name|item\s*name)\s*[:\.]\s*([A-Za-z0-9\s\-]{3,40})'
         match = re.search(pattern, full_text, re.IGNORECASE)
         if match:
             val = match.group(1).strip()
             item_bbox = ocr_items[0]["bbox"] if ocr_items else {"x": 10, "y": 10, "width": 80, "height": 8}
+            for it in ocr_items:
+                if val.lower() in it.get("text", "").lower():
+                    item_bbox = it["bbox"]
+                    break
             return {
                 "id": "ext_1",
                 "category": "COMMODITY_NAME",
@@ -105,8 +109,8 @@ class FieldExtractor:
 
         # 2. Known statutory commodity phrases in items
         commodity_keywords = [
-            r'flavou?red\s+tea', r'green\s+tea', r'\btea\b', r'chia\s+seeds?',
-            r'whole\s+wheat\s+atta', r'\batta\b', r'\brice\b', r'edible\s+oil',
+            r'flavou?red[\s_]+tea', r'green[\s_]+tea', r'\btea\b', r'chia[\s_]+seeds?',
+            r'whole[\s_]+wheat[\s_]+atta', r'\batta\b', r'\brice\b', r'edible[\s_]+oil',
             r'\boil\b', r'\bcoffee\b', r'\bbiscuits?\b', r'\bcookies\b',
             r'\bsoap\b', r'\bshampoo\b', r'\bspices?\b', r'\bmasala\b'
         ]
@@ -127,24 +131,64 @@ class FieldExtractor:
                         "isMissing": False
                     }
 
-        # 3. First prominent non-metadata, non-nutritional candidate line
+        # 2b. Check if file_name hints at a known commodity
+        if file_name:
+            fn_clean = re.sub(r'^[0-9a-fA-F]{8,32}_', '', file_name)
+            for kw in commodity_keywords:
+                m_fn = re.search(kw, fn_clean, re.IGNORECASE)
+                if m_fn:
+                    val = m_fn.group(0).replace('_', ' ').title()
+                    first_bbox = ocr_items[0]["bbox"] if ocr_items else {"x": 20.0, "y": 15.0, "width": 60.0, "height": 6.0}
+                    return {
+                        "id": "ext_1",
+                        "category": "COMMODITY_NAME",
+                        "fieldName": "Generic Commodity Name",
+                        "rawValue": val,
+                        "parsedValue": val,
+                        "confidence": 90.0,
+                        "boundingBox": {**first_bbox, "label": "Commodity Name"},
+                        "isMissing": False
+                    }
+
+        # 3. Known brand/commodity associations or clean headline text
+        # Filter out edge/noise artifacts (e.g. 'LOCK', 'ZIP', 'tsApp', 'cut here', etc.)
+        noise_words = r'^(?:lock|zip|cut|tear|open|close|here|side|panel|top|bottom|scan|app|tsapp)$'
         nutrition_words = r'approximate|serving|nutrition|per\s*serve|rda|kcal|carbohydrate|fat|sodium|mrp|net|mfg|exp|date|care|tel|phone|batch|call|pvt|ltd|pin|lic|bn\b'
-        candidate_lines = [
-            item for item in ocr_items 
-            if len(item.get("text", "").strip()) >= 3 and not re.search(nutrition_words, item.get("text", ""), re.IGNORECASE)
-        ]
-        if candidate_lines:
-            val = candidate_lines[0]["text"].strip()
-            return {
-                "id": "ext_1",
-                "category": "COMMODITY_NAME",
-                "fieldName": "Generic Commodity Name",
-                "rawValue": val,
-                "parsedValue": val,
-                "confidence": candidate_lines[0].get("confidence", 85.0),
-                "boundingBox": {**candidate_lines[0]["bbox"], "label": "Commodity Name"},
-                "isMissing": False
-            }
+        for item in ocr_items:
+            t = item.get("text", "").strip()
+            bbox = item.get("bbox", {})
+            if bbox.get("x", 0) < 3.0 and bbox.get("width", 0) < 8.0:
+                continue
+            if len(t) >= 3 and not re.search(noise_words, t, re.IGNORECASE) and not re.search(nutrition_words, t, re.IGNORECASE):
+                if re.search(r'true\s*elements|tata|parle|britannia|nestle|dabur|amul', t, re.IGNORECASE):
+                    return {
+                        "id": "ext_1",
+                        "category": "COMMODITY_NAME",
+                        "fieldName": "Generic Commodity Name",
+                        "rawValue": t,
+                        "parsedValue": t,
+                        "confidence": 88.0,
+                        "boundingBox": {**bbox, "label": "Commodity Name"},
+                        "isMissing": False
+                    }
+
+        # 4. Fallback to prominent candidate line
+        for item in ocr_items:
+            t = item.get("text", "").strip()
+            bbox = item.get("bbox", {})
+            if bbox.get("x", 0) < 3.0 and bbox.get("width", 0) < 8.0:
+                continue
+            if len(t) >= 4 and not re.search(noise_words, t, re.IGNORECASE) and not re.search(nutrition_words, t, re.IGNORECASE):
+                return {
+                    "id": "ext_1",
+                    "category": "COMMODITY_NAME",
+                    "fieldName": "Generic Commodity Name",
+                    "rawValue": t,
+                    "parsedValue": t,
+                    "confidence": 85.0,
+                    "boundingBox": {**bbox, "label": "Commodity Name"},
+                    "isMissing": False
+                }
 
         return {
             "id": "ext_1",
@@ -159,11 +203,14 @@ class FieldExtractor:
     @staticmethod
     def _find_net_quantity(ocr_items: List[Dict[str, Any]], full_text: str) -> Dict[str, Any]:
         # 1. Search across items explicitly containing net weight / quantity declaration
-        for item in ocr_items:
+        net_keyword_pat = r'\bnet\s*(?:weight|wt|quantity|qty|contents)?\b'
+        qty_value_pat = r'([0-9]+(?:\.[0-9]+)?\s*(?:g|kg|ml|l|N|gms|ML|Ltr|units?))\b'
+
+        for i, item in enumerate(ocr_items):
             t = item.get("text", "")
-            if re.search(r'net\s*(?:weight|wt|quantity|qty)', t, re.IGNORECASE):
-                # Check current and next item
-                match = re.search(r'net\s*(?:weight|wt|quantity|qty)\s*[:\.]?\s*([0-9\.]+\s*(?:g|kg|ml|l|N|gms|ML|Ltr|units?))', t, re.IGNORECASE)
+            if re.search(net_keyword_pat, t, re.IGNORECASE):
+                # Check current item
+                match = re.search(qty_value_pat, t, re.IGNORECASE)
                 if match:
                     val = match.group(1).strip()
                     return {
@@ -177,27 +224,29 @@ class FieldExtractor:
                         "estimatedFontHeightMm": 2.5,
                         "isMissing": False
                     }
-                # If standalone number in that line
-                sub_match = re.search(r'([0-9\.]+\s*(?:g|kg|ml|l|N|gms|ML|Ltr|units?))', t, re.IGNORECASE)
-                if sub_match:
-                    val = sub_match.group(1).strip()
-                    return {
-                        "id": "ext_2",
-                        "category": "NET_QUANTITY",
-                        "fieldName": "Net Quantity",
-                        "rawValue": t.strip(),
-                        "parsedValue": val,
-                        "confidence": 96.0,
-                        "boundingBox": {**item["bbox"], "label": "Net Quantity"},
-                        "estimatedFontHeightMm": 2.5,
-                        "isMissing": False
-                    }
+                # Check immediately following items (e.g. item i is "NET QUANTITY:", item i+1 is "10UNITS" or "100g")
+                for offset in (1, 2):
+                    if i + offset < len(ocr_items):
+                        next_item = ocr_items[i + offset]
+                        next_text = next_item.get("text", "").strip()
+                        next_match = re.search(qty_value_pat, next_text, re.IGNORECASE)
+                        if next_match:
+                            val = next_match.group(1).strip()
+                            combined_raw = f"{t} {next_text}".strip()
+                            return {
+                                "id": "ext_2",
+                                "category": "NET_QUANTITY",
+                                "fieldName": "Net Quantity",
+                                "rawValue": combined_raw,
+                                "parsedValue": val,
+                                "confidence": 97.0,
+                                "boundingBox": {**next_item["bbox"], "label": "Net Quantity"},
+                                "estimatedFontHeightMm": 2.5,
+                                "isMissing": False
+                            }
 
-        # 2. General regex search in full text
-        match = re.search(r'(?:net\s*wt\.?|net\s*qty\.?|net\s*quantity|net\s*weight)\s*[:\.]?\s*([0-9\.]+\s*(?:g|kg|ml|l|N|gms|ML|Ltr|units?))', full_text, re.IGNORECASE)
-        if not match:
-            match = re.search(r'(\b[0-9\.]+\s*(?:g|kg|ml|l|N|gms|ML|Ltr|units?)\b)', full_text, re.IGNORECASE)
-
+        # 2. Search in full text STRICTLY with net keyword context (never match random nutrition table rows)
+        match = re.search(r'(?:net\s*wt\.?|net\s*qty\.?|net\s*quantity|net\s*weight|net\s*contents)\s*[:\.]?\s*([0-9]+(?:\.[0-9]+)?\s*(?:g|kg|ml|l|N|gms|ML|Ltr|units?))\b', full_text, re.IGNORECASE)
         if match:
             raw = match.group(0)
             parsed = match.group(1)
@@ -230,49 +279,68 @@ class FieldExtractor:
 
     @staticmethod
     def _find_mrp(ocr_items: List[Dict[str, Any]], full_text: str) -> Dict[str, Any]:
-        # 1. Search item by item for MRP indicators
+        mrp_keywords = r'\b(?:mrp|max\.?\s*retail\s*price|retail\s*price)\b|incl\.?\s*of\s*all\s*taxes'
+
         for i, item in enumerate(ocr_items):
             t = item.get("text", "")
-            if re.search(r'\bmrp\b|incl\.?\s*of\s*all\s*taxes|retail\s*price', t, re.IGNORECASE):
-                # Check this item and the next 6 items for a clean price number
-                for offset in range(0, 7):
+            if re.search(mrp_keywords, t, re.IGNORECASE):
+                # Search this item and immediate adjacent items (offset 0 to 3)
+                for offset in range(0, 4):
                     if i + offset < len(ocr_items):
-                        cand_text = ocr_items[i + offset].get("text", "").strip()
-                        # Ignore batch codes (e.g. RR27E19) and dates
-                        if re.search(r'\d{2}/\d{2}|[A-Za-z]+\d+[A-Za-z]+', cand_text):
-                            continue
-                        pm = re.search(r'(?:₹|rs\.?|inr)?\s*([0-9]+(?:\.[0-9]{2})?)\s*$', cand_text, re.IGNORECASE)
-                        if pm:
-                            val_f = float(pm.group(1))
-                            if val_f > 1.0: # Valid commodity price
-                                return {
-                                    "id": "ext_3",
-                                    "category": "MAXIMUM_RETAIL_PRICE",
-                                    "fieldName": "Maximum Retail Price (MRP)",
-                                    "rawValue": f"MRP ₹ {val_f:.2f} (incl. of all taxes)",
-                                    "parsedValue": val_f,
-                                    "confidence": 97.0,
-                                    "boundingBox": {**ocr_items[i + offset]["bbox"], "label": "MRP"},
-                                    "estimatedFontHeightMm": 2.2,
-                                    "isMissing": False
-                                }
+                        cand_item = ocr_items[i + offset]
+                        cand_text = cand_item.get("text", "").strip()
 
-        # 2. General regex search in full text
-        pattern = r'(?:mrp|max\.?\s*retail\s*price|price)\s*[:\.]?\s*(?:₹|rs\.?|inr)?\s*([0-9]+(?:\.[0-9]{2})?)'
-        match = re.search(pattern, full_text, re.IGNORECASE)
+                        # Skip dates, license numbers, barcodes, pin codes, phone numbers
+                        if re.search(r'\d{2}/\d{2}|lic\.?\s*no|\bpin\b|\bfssai\b|\b1800\b', cand_text, re.IGNORECASE):
+                            continue
+
+                        # Extract price candidates (e.g. "75.00(Rs.Z.50/UNIT)", "Rs.75/-", "Rs. 75.00")
+                        candidates = re.findall(r'(?:₹|rs\.?|inr)?\s*([0-9]+(?:\.[0-9]{1,2})?)\s*(?:/[-–])?', cand_text, re.IGNORECASE)
+                        for c in candidates:
+                            c_clean = c.strip()
+                            if not c_clean:
+                                continue
+                            # Filter out license numbers or pin codes (>5 digits without decimal)
+                            if len(c_clean) > 5 and "." not in c_clean:
+                                continue
+                            try:
+                                val_f = float(c_clean)
+                                if 1.0 <= val_f <= 50000.0:
+                                    return {
+                                        "id": "ext_3",
+                                        "category": "MAXIMUM_RETAIL_PRICE",
+                                        "fieldName": "Maximum Retail Price (MRP)",
+                                        "rawValue": f"MRP ₹ {val_f:.2f} (incl. of all taxes)",
+                                        "parsedValue": val_f,
+                                        "confidence": 97.0,
+                                        "boundingBox": {**cand_item["bbox"], "label": "MRP"},
+                                        "estimatedFontHeightMm": 2.2,
+                                        "isMissing": False
+                                    }
+                            except ValueError:
+                                continue
+
+        # 2. General regex search in full text with explicit MRP keyword
+        match = re.search(r'(?:mrp|max\.?\s*retail\s*price)\s*[:\.]?\s*(?:₹|rs\.?|inr)?\s*([0-9]+(?:\.[0-9]{1,2})?)\s*(?:/[-–])?', full_text, re.IGNORECASE)
         if match:
-            val_f = float(match.group(1))
-            return {
-                "id": "ext_3",
-                "category": "MAXIMUM_RETAIL_PRICE",
-                "fieldName": "Maximum Retail Price (MRP)",
-                "rawValue": f"MRP ₹ {val_f:.2f}",
-                "parsedValue": val_f,
-                "confidence": 90.0,
-                "boundingBox": {"x": 30.0, "y": 64.0, "width": 55.0, "height": 4.5, "label": "MRP"},
-                "estimatedFontHeightMm": 2.2,
-                "isMissing": False
-            }
+            cand = match.group(1).strip()
+            if len(cand) <= 5 or "." in cand:
+                try:
+                    val_f = float(cand)
+                    if 1.0 <= val_f <= 50000.0:
+                        return {
+                            "id": "ext_3",
+                            "category": "MAXIMUM_RETAIL_PRICE",
+                            "fieldName": "Maximum Retail Price (MRP)",
+                            "rawValue": f"MRP ₹ {val_f:.2f}",
+                            "parsedValue": val_f,
+                            "confidence": 92.0,
+                            "boundingBox": {"x": 30.0, "y": 64.0, "width": 55.0, "height": 4.5, "label": "MRP"},
+                            "estimatedFontHeightMm": 2.2,
+                            "isMissing": False
+                        }
+                except ValueError:
+                    pass
 
         return {
             "id": "ext_3",
@@ -283,6 +351,7 @@ class FieldExtractor:
             "confidence": 0.0,
             "isMissing": True
         }
+
 
     @staticmethod
     def _find_unit_sale_price(ocr_items: List[Dict[str, Any]], full_text: str, mrp_item: Dict[str, Any], net_qty_item: Dict[str, Any]) -> Dict[str, Any]:
@@ -445,10 +514,10 @@ class FieldExtractor:
             if re.search(r'mkt\.?\s*by|mfd\.?\s*by|marketed\s*by|manufactured\s*by|packed\s*by|consumer\s*products|pvt\.?\s*ltd|limited', t, re.IGNORECASE):
                 # Build complete details with following address items
                 parts = [t.strip()]
-                for offset in range(1, 4):
+                for offset in range(1, 6):
                     if i + offset < len(ocr_items):
                         cand = ocr_items[i + offset].get("text", "").strip()
-                        if re.search(r'road|street|west\s*bengal|bengaluru|kolkata|delhi|mumbai|pin|\b[0-9]{6}\b|lic\.?\s*no', cand, re.IGNORECASE):
+                        if re.search(r'road|street|bengal|bengaluru|kolkata|delhi|mumbai|pune|pin|\b[0-9]{6}\b|lic\.?\s*no', cand, re.IGNORECASE):
                             parts.append(cand)
                 
                 full_val = ", ".join(parts)
@@ -496,7 +565,7 @@ class FieldExtractor:
         best_bbox = {"x": 30.0, "y": 82.0, "width": 65.0, "height": 5.5}
         for item in ocr_items:
             t = item.get("text", "")
-            if re.search(r'toll\s*free|1800|\bcare@|consumer\s*care|customer\s*care|\bhelpline\b', t, re.IGNORECASE):
+            if re.search(r'toll\s*free|1800|\bcare[@s]|consumer\s*care|customer\s*care|\bhelpline\b|feedback|complaints|email:|emal:', t, re.IGNORECASE):
                 care_items.append(t.strip())
                 best_bbox = item["bbox"]
 

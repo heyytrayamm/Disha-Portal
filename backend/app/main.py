@@ -109,6 +109,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(inspections.router, prefix="/inspections")
 
 @app.get("/api/health")
+@app.get("/health")
 def health_check():
     return {
         "status": "UP",

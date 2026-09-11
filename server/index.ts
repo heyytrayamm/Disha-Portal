@@ -1,3 +1,8 @@
+/**
+ * NOTE: This Express server is a legacy local development proxy helper only.
+ * In production (and direct frontend mode), the React frontend communicates directly
+ * with the FastAPI backend at VITE_API_URL, including POST /api/v1/scan/upload for multipart file uploads.
+ */
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 

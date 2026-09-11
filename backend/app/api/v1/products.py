@@ -3,87 +3,12 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 
 from app.core.database import get_db
-from app.models.scan import ScanRecord, ExtractedFieldRecord, RuleCheckRecord
-from app.models.notice import NoticeRecord
+from app.models.scan import ScanRecord
+from app.api.v1.inspections import format_inspection_record
 
 router = APIRouter(prefix="/products", tags=["Product Scan Repository"])
 
-def format_scan_record(rec: ScanRecord) -> dict:
-    extracted_fields = []
-    for f in rec.extracted_fields:
-        extracted_fields.append({
-            "id": f.id,
-            "category": f.category,
-            "fieldName": f.field_name,
-            "rawValue": f.raw_value,
-            "parsedValue": f.parsed_value,
-            "confidence": f.confidence,
-            "boundingBox": f.bounding_box,
-            "estimatedFontHeightMm": f.estimated_font_height_mm,
-            "isMissing": f.is_missing == "true"
-        })
-
-    rule_checks = []
-    for r in rec.rule_checks:
-        rule_checks.append({
-            "ruleId": r.rule_id,
-            "ruleNumber": r.rule_number,
-            "title": r.title,
-            "description": r.description,
-            "category": r.category,
-            "isMandatory": r.is_mandatory == "true",
-            "status": r.status,
-            "severity": r.severity,
-            "observedValue": r.observed_value,
-            "expectedFormat": r.expected_format,
-            "legalReference": r.legal_reference,
-            "remedialAction": r.remedial_action,
-            "penaltySection": r.penalty_section
-        })
-
-    notice_details = None
-    if rec.notice:
-        notice_details = {
-            "noticeNumber": rec.notice.notice_number,
-            "issuedDate": rec.notice.issued_date,
-            "hearingDate": rec.notice.hearing_date,
-            "penaltyAmount": rec.notice.penalty_amount,
-            "notes": rec.notice.notes or ""
-        }
-
-    return {
-        "id": rec.id,
-        "barcode": rec.barcode,
-        "productName": rec.product_name,
-        "brandName": rec.brand_name,
-        "category": rec.category,
-        "manufacturerName": rec.manufacturer_name,
-        "countryOfOrigin": rec.country_of_origin,
-        "imageUrl": rec.image_url,
-        "scannedAt": rec.scanned_at.isoformat() if rec.scanned_at else "",
-        "inspectorName": rec.inspector_name,
-        "inspectorLocation": rec.inspector_location,
-        "dimensions": {
-            "pdpAreaCm2": rec.pdp_area_cm2,
-            "estimatedPackageType": rec.package_type,
-            "minRequiredFontHeightMm": rec.min_required_font_mm,
-            "detectedMinFontHeightMm": rec.detected_min_font_mm
-        },
-        "extractedFields": [] if rec.overall_status == "UNABLE_TO_ASSESS" else extracted_fields,
-        "ruleChecks": [] if rec.overall_status == "UNABLE_TO_ASSESS" else rule_checks,
-        "overallScore": None if (rec.overall_status == "UNABLE_TO_ASSESS" or rec.overall_score is None or rec.overall_score < 0) else rec.overall_score,
-        "overallStatus": rec.overall_status,
-
-        "sourceImageUrl": getattr(rec, "source_image_url", None) or rec.image_url,
-        "inspectionId": getattr(rec, "inspection_id", None) or rec.id,
-        "violationsCount": {
-            "critical": rec.critical_violations,
-            "major": rec.major_violations,
-            "minor": rec.minor_violations
-        },
-        "enforcementStatus": rec.enforcement_status,
-        "noticeDetails": notice_details
-    }
+format_scan_record = format_inspection_record
 
 
 @router.get("", response_model=dict)

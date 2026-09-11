@@ -53,6 +53,8 @@ class StorageService:
         with open(local_path, "wb") as f:
             f.write(file_bytes)
 
-        return f"/static/{folder}/{unique_name}"
+        if folder == "uploads":
+            return f"/api/v1/scan/uploads/{unique_name}"
+        return f"/reports/{unique_name}"
 
 storage_service = StorageService()

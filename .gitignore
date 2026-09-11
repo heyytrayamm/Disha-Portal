@@ -29,8 +29,14 @@ __pycache__/
 
 # Database
 *.db
+label_compliance.db
+
+# Uploads & Media
+uploads/
+backend/uploads/
 
 # Environment & Secrets
 .env
 .env.*
 !.env.example
+
