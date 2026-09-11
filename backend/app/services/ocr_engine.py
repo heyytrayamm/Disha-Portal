@@ -1,126 +1,178 @@
-import numpy as np
-from typing import List, Dict, Any, Tuple
+import os
+import shutil
 import logging
+import numpy as np
+from typing import List, Dict, Any, Optional
+
+from app.core.config import settings
 
 logger = logging.getLogger("ocr_engine")
 
 class OCREngine:
     """
-    Dual OCR Engine:
-    - Primary: PaddleOCR
+    Real Dual OCR Engine:
+    - Primary: PaddleOCR (or RapidOCR ONNX runtime using PP-OCRv4 models)
     - Fallback: PyTesseract
-    - Development Fallback: Resilient rule-based text extraction simulation
+    - STRICT: Never produces mock, simulated, or hardcoded text.
     """
 
     def __init__(self):
         self.paddle_ocr = None
+        self.rapid_ocr = None
         self.tesseract_available = False
 
-        # Attempt initializing PaddleOCR
+        # 1. Attempt initializing native PaddleOCR
         try:
             from paddleocr import PaddleOCR
             self.paddle_ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
             logger.info("PaddleOCR engine initialized successfully.")
         except Exception as e:
-            logger.warning(f"PaddleOCR not available: {e}. Falling back to Tesseract/Simulated OCR.")
+            logger.info(f"Native PaddleOCR not loaded ({e}). Checking RapidOCR / Tesseract.")
 
-        # Attempt checking Tesseract
+        # 2. Attempt initializing RapidOCR (PaddleOCR PP-OCRv4 ONNX runtime engine)
+        if not self.paddle_ocr:
+            try:
+                from rapidocr_onnxruntime import RapidOCR
+                self.rapid_ocr = RapidOCR()
+                logger.info("RapidOCR (PaddleOCR ONNX runtime) engine initialized successfully.")
+            except Exception as e:
+                logger.info(f"RapidOCR engine not available: {e}")
+
+        # 3. Configure PyTesseract fallback
         try:
             import pytesseract
-            # Quick test call
+
+            # Auto-locate tesseract binary if not on PATH
+            tesseract_cmd = settings.TESSERACT_CMD or shutil.which("tesseract")
+            if not tesseract_cmd:
+                potential_paths = [
+                    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+                    r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+                    r"D:\Tesseract-OCR\tesseract.exe",
+                    r"D:\temp\tesseract\tesseract.exe"
+                ]
+                for p in potential_paths:
+                    if os.path.exists(p):
+                        tesseract_cmd = p
+                        break
+
+            if tesseract_cmd:
+                pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
+
             pytesseract.get_tesseract_version()
             self.tesseract_available = True
-            logger.info("PyTesseract engine available.")
+            logger.info(f"PyTesseract available at: {getattr(pytesseract.pytesseract, 'tesseract_cmd', 'PATH')}")
         except Exception as e:
-            logger.warning(f"PyTesseract not available: {e}.")
+            logger.warning(f"PyTesseract not available: {e}")
 
     def extract_text_and_boxes(self, img: np.ndarray, file_name: str = "") -> List[Dict[str, Any]]:
         """
-        Runs OCR on preprocessed numpy image.
+        Runs real OCR on preprocessed image numpy array.
         Returns list of detected text boxes:
         [
-          {"text": "MRP Rs. 150.00", "confidence": 97.5, "bbox": [x, y, w, h]}
+          {"text": "MRP Rs. 150.00", "confidence": 97.5, "bbox": {"x": 10, "y": 20, "width": 50, "height": 8}}
         ]
+        STRICT: Returns [] if nothing is readable. Never invents data.
         """
-        # 1. Try PaddleOCR
+        h, w = img.shape[:2]
+        ocr_items: List[Dict[str, Any]] = []
+        engine_used = "NONE"
+
+        # 1. Primary Engine: PaddleOCR (Native)
         if self.paddle_ocr:
             try:
                 result = self.paddle_ocr.ocr(img, cls=True)
-                ocr_items = []
-                h, w = img.shape[:2]
                 if result and len(result) > 0 and result[0]:
                     for line in result[0]:
                         box, (text, conf) = line
-                        # Normalize box
+                        text_str = str(text).strip()
+                        if not text_str:
+                            continue
                         xs = [pt[0] for pt in box]
                         ys = [pt[1] for pt in box]
-                        min_x, max_x = min(xs), max(xs)
-                        min_y, max_y = min(ys), max(ys)
-                        
-                        bbox_pct = {
-                            "x": round((min_x / w) * 100, 2),
-                            "y": round((min_y / h) * 100, 2),
-                            "width": round(((max_x - min_x) / w) * 100, 2),
-                            "height": round(((max_y - min_y) / h) * 100, 2)
-                        }
+                        min_x, max_x = max(0, min(xs)), min(w, max(xs))
+                        min_y, max_y = max(0, min(ys)), min(h, max(ys))
 
                         ocr_items.append({
-                            "text": text.strip(),
+                            "text": text_str,
                             "confidence": round(float(conf) * 100, 1),
-                            "bbox": bbox_pct
+                            "bbox": {
+                                "x": round((min_x / w) * 100, 2),
+                                "y": round((min_y / h) * 100, 2),
+                                "width": round(((max_x - min_x) / w) * 100, 2),
+                                "height": round(((max_y - min_y) / h) * 100, 2)
+                            }
                         })
-                if ocr_items:
-                    return ocr_items
+                    if ocr_items:
+                        engine_used = "PaddleOCR"
             except Exception as e:
-                logger.error(f"PaddleOCR execution error: {e}")
+                logger.error(f"PaddleOCR error during execution: {e}")
 
-        # 2. Try Tesseract
-        if self.tesseract_available:
+        # 2. Secondary Primary: RapidOCR (PaddleOCR ONNX Runtime)
+        if not ocr_items and self.rapid_ocr:
+            try:
+                result, _ = self.rapid_ocr(img)
+                if result:
+                    for line in result:
+                        # line format: [dt_boxes, text, score]
+                        box, text, score = line[0], line[1], line[2]
+                        text_str = str(text).strip()
+                        if not text_str:
+                            continue
+                        xs = [pt[0] for pt in box]
+                        ys = [pt[1] for pt in box]
+                        min_x, max_x = max(0, min(xs)), min(w, max(xs))
+                        min_y, max_y = max(0, min(ys)), min(h, max(ys))
+
+                        ocr_items.append({
+                            "text": text_str,
+                            "confidence": round(float(score) * 100, 1),
+                            "bbox": {
+                                "x": round((min_x / w) * 100, 2),
+                                "y": round((min_y / h) * 100, 2),
+                                "width": round(((max_x - min_x) / w) * 100, 2),
+                                "height": round(((max_y - min_y) / h) * 100, 2)
+                            }
+                        })
+                    if ocr_items:
+                        engine_used = "RapidOCR-Paddle"
+            except Exception as e:
+                logger.error(f"RapidOCR error during execution: {e}")
+
+        # 3. Fallback Engine: PyTesseract
+        if not ocr_items and self.tesseract_available:
             try:
                 import pytesseract
-                h, w = img.shape[:2]
                 data = pytesseract.image_to_data(img, output_type=pytesseract.Output.DICT)
-                ocr_items = []
-                n_boxes = len(data['text'])
+                n_boxes = len(data.get('text', []))
                 for i in range(n_boxes):
                     text = data['text'][i].strip()
                     conf = float(data['conf'][i])
-                    if conf > 30 and len(text) > 1:
+                    if conf > 25 and len(text) > 1:
                         bx, by, bw, bh = data['left'][i], data['top'][i], data['width'][i], data['height'][i]
-                        bbox_pct = {
-                            "x": round((bx / w) * 100, 2),
-                            "y": round((by / h) * 100, 2),
-                            "width": round((bw / w) * 100, 2),
-                            "height": round((bh / h) * 100, 2)
-                        }
                         ocr_items.append({
                             "text": text,
                             "confidence": round(conf, 1),
-                            "bbox": bbox_pct
+                            "bbox": {
+                                "x": round((bx / w) * 100, 2),
+                                "y": round((by / h) * 100, 2),
+                                "width": round((bw / w) * 100, 2),
+                                "height": round((bh / h) * 100, 2)
+                            }
                         })
                 if ocr_items:
-                    return ocr_items
+                    engine_used = "PyTesseract"
             except Exception as e:
-                logger.error(f"PyTesseract execution error: {e}")
+                logger.error(f"PyTesseract error during execution: {e}")
 
-        # 3. Development Fallback (Simulated High-Accuracy OCR)
-        logger.info(f"Using simulated OCR fallback for {file_name}")
-        return self._generate_simulated_ocr_output(file_name)
+        # Structured Development Logging (no credentials or secrets)
+        full_text = " ".join(item["text"] for item in ocr_items)
+        snippet = full_text[:100] if full_text else "(no text detected)"
+        logger.info(
+            f"[OCR_AUDIT] file='{file_name}' dims={w}x{h} engine={engine_used} "
+            f"items_count={len(ocr_items)} text_len={len(full_text)} snippet='{snippet}'"
+        )
 
-    def _generate_simulated_ocr_output(self, file_name: str) -> List[Dict[str, Any]]:
-        clean_name = file_name.replace(".jpg", "").replace(".png", "").replace("_", " ").upper()
-        if not clean_name:
-            clean_name = "ORGANIC WHOLE WHEAT ATTA"
-
-        items = [
-            {"text": f"COMMODITY: {clean_name}", "confidence": 98.5, "bbox": {"x": 10.0, "y": 12.0, "width": 75.0, "height": 8.0}},
-            {"text": "NET QUANTITY: 500 g", "confidence": 97.2, "bbox": {"x": 30.0, "y": 58.0, "width": 35.0, "height": 4.5}},
-            {"text": "MRP Rs. 150.00 (INCL. OF ALL TAXES)", "confidence": 96.8, "bbox": {"x": 30.0, "y": 64.0, "width": 55.0, "height": 4.5}},
-            {"text": "MFG DATE: 09/2025", "confidence": 95.4, "bbox": {"x": 30.0, "y": 70.0, "width": 30.0, "height": 4.0}},
-            {"text": "EXPIRY DATE: 09/2026", "confidence": 94.1, "bbox": {"x": 62.0, "y": 70.0, "width": 30.0, "height": 4.0}},
-            {"text": "MANUFACTURED BY: Apex Consumer Products Ltd, Plot 42, Industrial Zone, New Delhi - 110020", "confidence": 93.5, "bbox": {"x": 30.0, "y": 75.0, "width": 65.0, "height": 5.5}},
-            {"text": "FOR CONSUMER COMPLAINTS CONTACT: Consumer Care Manager, Helpline: 1800-444-555, Email: care@apexconsumer.in", "confidence": 94.0, "bbox": {"x": 30.0, "y": 82.0, "width": 65.0, "height": 5.5}}
-        ]
-        return items
+        return ocr_items
 
 ocr_engine = OCREngine()

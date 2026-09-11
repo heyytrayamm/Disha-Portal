@@ -31,19 +31,33 @@ app = FastAPI(
 )
 
 # CORS Middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # Allow all origins for dev/production flex
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
+is_wildcard = not origins or "*" in origins
+
+if is_wildcard:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Mount static storage directories for local fallback
 if os.path.exists(settings.UPLOAD_DIR):
     app.mount("/static/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+    app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads_root")
 if os.path.exists(settings.REPORT_DIR):
     app.mount("/static/reports", StaticFiles(directory=settings.REPORT_DIR), name="reports")
+    app.mount("/reports", StaticFiles(directory=settings.REPORT_DIR), name="reports_root")
 
 # Include V1 Router
 app.include_router(api_router, prefix=settings.API_V1_STR)
@@ -67,4 +81,4 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=settings.PORT, reload=True)

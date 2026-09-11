@@ -1,10 +1,46 @@
 import type { ScannedProduct, ComplianceStats } from '../types/metrology';
 import { generateInitialSampleProducts, getSampleComplianceStats } from './sampleDataService';
-import { evaluateLegalMetrologyRules, calculateComplianceScore, getMinRequiredFontHeightMm } from './metrologyRulesEngine';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+export const API_ROOT = RAW_API_URL.replace(/\/+$/, '');
+export const API_BASE_URL = `${API_ROOT}/api/v1`;
+
+/**
+ * Resolves an image URL or relative backend path into a full, browser-accessible URL.
+ * Handles base64 data URIs, object blob URLs, full HTTP(S) URLs, and relative backend paths.
+ */
+export function resolveImageUrl(url?: string | null): string {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === 'N/A') return '';
+
+  // Data URIs, Object URLs, and full HTTP(S) URLs are already browser-accessible
+  if (
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://')
+  ) {
+    return trimmed;
+  }
+
+  // Relative backend path (e.g. /static/uploads/... or uploads/...)
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${API_ROOT}${cleanPath}`;
+}
 
 export class ApiService {
+  public static normalizeProduct(product: ScannedProduct): ScannedProduct {
+    if (!product) return product;
+    const resolvedImage = resolveImageUrl(product.imageUrl);
+    const resolvedSource = resolveImageUrl(product.sourceImageUrl || product.imageUrl);
+    return {
+      ...product,
+      imageUrl: resolvedImage || resolvedSource,
+      sourceImageUrl: resolvedSource || resolvedImage,
+    };
+  }
+
   private static getHeaders() {
     const token = localStorage.getItem('lm_auth_token');
     return {
@@ -15,12 +51,12 @@ export class ApiService {
 
   static async fetchHealth(): Promise<any> {
     try {
-      const res = await fetch(`http://localhost:8000/api/health`);
+      const res = await fetch(`${API_ROOT}/api/health`);
       if (res.ok) return await res.json();
     } catch (e) {
-      // Fallback
+      // Backend offline
     }
-    return { status: 'UP', systemName: 'AI-Powered Label Compliance Checking System (Local Fallback)' };
+    return { status: 'OFFLINE', systemName: 'FastAPI Backend Disconnected' };
   }
 
   static async fetchDashboardStats(): Promise<ComplianceStats> {
@@ -31,7 +67,7 @@ export class ApiService {
         return data;
       }
     } catch (e) {
-      console.warn("FastAPI backend offline, using local analytics fallback.");
+      console.warn("FastAPI backend offline, using historical sample analytics.");
     }
     return getSampleComplianceStats();
   }
@@ -46,10 +82,10 @@ export class ApiService {
       const res = await fetch(`${API_BASE_URL}/products?${params.toString()}`, { headers: this.getHeaders() });
       if (res.ok) {
         const data = await res.json();
-        return data.products;
+        return (data.products || []).map((p: ScannedProduct) => this.normalizeProduct(p));
       }
     } catch (e) {
-      console.warn("FastAPI backend offline, using local repository fallback.");
+      console.warn("FastAPI backend offline, displaying cached repository items.");
     }
     
     let sample = generateInitialSampleProducts();
@@ -66,15 +102,20 @@ export class ApiService {
     try {
       const res = await fetch(`${API_BASE_URL}/products/${id}`, { headers: this.getHeaders() });
       if (res.ok) {
-        return await res.json();
+        const data = await res.json();
+        return this.normalizeProduct(data);
       }
     } catch (e) {
-      // Fallback
+      // Offline fallback
     }
     const sample = generateInitialSampleProducts().find(s => s.id === id);
     return sample || null;
   }
 
+  /**
+   * Upload image file to real backend OCR pipeline.
+   * If server is unreachable or errors, throws an informative error without fake fallbacks.
+   */
   static async uploadImageFile(
     file: File,
     options?: {
@@ -84,51 +125,63 @@ export class ApiService {
       pdpAreaCm2?: number;
     }
   ): Promise<ScannedProduct> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (options?.inspectorName) formData.append('inspectorName', options.inspectorName);
+    if (options?.inspectorLocation) formData.append('inspectorLocation', options.inspectorLocation);
+    formData.append('isImported', String(Boolean(options?.isImported)));
+    formData.append('pdpAreaCm2', String(options?.pdpAreaCm2 || 180.0));
+
+    const token = localStorage.getItem('lm_auth_token');
+    const headers: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+    let res: Response;
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      if (options?.inspectorName) formData.append('inspectorName', options.inspectorName);
-      if (options?.inspectorLocation) formData.append('inspectorLocation', options.inspectorLocation);
-      formData.append('isImported', String(Boolean(options?.isImported)));
-      formData.append('pdpAreaCm2', String(options?.pdpAreaCm2 || 180.0));
-
-      const token = localStorage.getItem('lm_auth_token');
-      const headers: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-      const res = await fetch(`${API_BASE_URL}/scan/upload`, {
+      res = await fetch(`${API_BASE_URL}/scan/upload`, {
         method: 'POST',
         headers,
         body: formData
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        const product: ScannedProduct = data.product;
-        if (data.preprocessingStages) product.preprocessingStages = data.preprocessingStages;
-        if (data.opencvMetadata) product.opencvMetadata = data.opencvMetadata;
-        return product;
-      }
-    } catch (e) {
-      console.warn("FastAPI backend upload endpoint unavailable, falling back to base64 scan pipeline.");
-    }
-
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
-        resolve(this.scanImage({
-          imageUrl: dataUrl,
+    } catch (networkError: any) {
+      // If multipart fails due to network, try base64 fallback to /scan endpoint
+      try {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        return await this.scanImage({
+          imageUrl: base64,
           fileName: file.name,
           inspectorName: options?.inspectorName,
           inspectorLocation: options?.inspectorLocation,
           isImported: options?.isImported,
           pdpAreaCm2: options?.pdpAreaCm2
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
+        });
+      } catch (innerError: any) {
+        console.error("Analysis server connection failure:", networkError, innerError);
+        throw new Error("Unable to connect to the compliance analysis server. Please ensure the backend is running and reachable.");
+      }
+    }
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => null);
+      const msg = errData?.detail || errData?.message || `Server returned error status ${res.status}`;
+      throw new Error(msg);
+    }
+
+    const data = await res.json();
+    const product: ScannedProduct = data.product;
+    if (data.preprocessingStages) product.preprocessingStages = data.preprocessingStages;
+    if (data.opencvMetadata) product.opencvMetadata = data.opencvMetadata;
+    return this.normalizeProduct(product);
   }
 
+  /**
+   * Scan image via base64 to real backend OCR pipeline.
+   * If server is unreachable or errors, throws an informative error without fake fallbacks.
+   */
   static async scanImage(payload: {
     imageUrl: string;
     fileName?: string;
@@ -137,137 +190,29 @@ export class ApiService {
     isImported?: boolean;
     pdpAreaCm2?: number;
   }): Promise<ScannedProduct> {
+    let res: Response;
     try {
-      const res = await fetch(`${API_BASE_URL}/scan`, {
+      res = await fetch(`${API_BASE_URL}/scan`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(payload)
       });
-      if (res.ok) {
-        const data = await res.json();
-        const product: ScannedProduct = data.product;
-        if (data.preprocessingStages) product.preprocessingStages = data.preprocessingStages;
-        if (data.opencvMetadata) product.opencvMetadata = data.opencvMetadata;
-        return product;
-      }
-    } catch (e) {
-      console.warn("FastAPI backend scan endpoint unavailable, utilizing local Rule Engine fallback.");
+    } catch (networkError: any) {
+      console.error("Backend connection error:", networkError);
+      throw new Error("Unable to connect to the compliance analysis server. Please ensure the backend is running and reachable.");
     }
 
-    // Client-side Fallback execution
-    const name = payload.fileName || 'Scanned_Packaging_Label.jpg';
-    const isImported = Boolean(payload.isImported);
-    const pdpArea = payload.pdpAreaCm2 || 180;
-    const minFont = getMinRequiredFontHeightMm(pdpArea);
-
-    const extractedFields: any[] = [
-      {
-        id: 'ext_1',
-        category: 'COMMODITY_NAME',
-        fieldName: 'Generic Commodity Name',
-        rawValue: name.replace(/\.[^/.]+$/, "").replace(/_/g, " ").toUpperCase(),
-        parsedValue: name.replace(/\.[^/.]+$/, "").replace(/_/g, " ").toUpperCase(),
-        confidence: 96,
-        boundingBox: { x: 10, y: 12, width: 75, height: 8, label: 'Commodity Name' },
-        isMissing: false
-      },
-      {
-        id: 'ext_2',
-        category: 'NET_QUANTITY',
-        fieldName: 'Net Quantity',
-        rawValue: /gms/i.test(name) ? '500 gms' : '500 g',
-        parsedValue: '500 g',
-        confidence: 98,
-        boundingBox: { x: 30, y: 58, width: 35, height: 4, label: 'Net Quantity' },
-        estimatedFontHeightMm: /small/i.test(name) ? 1.2 : 2.5,
-        isMissing: false
-      },
-      {
-        id: 'ext_3',
-        category: 'MAXIMUM_RETAIL_PRICE',
-        fieldName: 'Maximum Retail Price (MRP)',
-        rawValue: /notax/i.test(name) ? 'MRP Rs. 150.00' : 'MRP ₹ 150.00 (incl. of all taxes)',
-        parsedValue: 150.00,
-        confidence: 97,
-        boundingBox: { x: 30, y: 64, width: 55, height: 4, label: 'MRP' },
-        estimatedFontHeightMm: 2.2,
-        isMissing: false
-      },
-      {
-        id: 'ext_4',
-        category: 'DATE_MFG_PACK_IMPORT',
-        fieldName: 'Date of Mfg / Packing',
-        rawValue: '09/2025',
-        parsedValue: '09/2025',
-        confidence: 95,
-        boundingBox: { x: 30, y: 70, width: 30, height: 4, label: 'Mfg Date' },
-        isMissing: false
-      },
-      {
-        id: 'ext_5',
-        category: 'MANUFACTURER_PACKER_IMPORTER',
-        fieldName: 'Manufacturer / Packer Details',
-        rawValue: 'Apex Consumer Products Ltd, Plot 42, Industrial Zone, New Delhi - 110020',
-        parsedValue: 'Apex Consumer Products Ltd',
-        confidence: 93,
-        boundingBox: { x: 30, y: 75, width: 65, height: 5, label: 'Manufacturer' },
-        isMissing: false
-      },
-      {
-        id: 'ext_6',
-        category: 'CONSUMER_CARE',
-        fieldName: 'Consumer Care Information',
-        rawValue: 'Consumer Helpline: 1800-444-555, email: care@apexconsumer.in',
-        parsedValue: '1800-444-555',
-        confidence: 94,
-        boundingBox: { x: 30, y: 82, width: 65, height: 5, label: 'Consumer Care' },
-        isMissing: false
-      }
-    ];
-
-    if (isImported) {
-      extractedFields.push({
-        id: 'ext_7',
-        category: 'COUNTRY_OF_ORIGIN',
-        fieldName: 'Country of Origin',
-        rawValue: 'Country of Origin: Germany',
-        parsedValue: 'Germany',
-        confidence: 99,
-        boundingBox: { x: 30, y: 88, width: 40, height: 4, label: 'Country of Origin' },
-        isMissing: false
-      });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => null);
+      const msg = errData?.detail || errData?.message || `Compliance analysis failed with status ${res.status}`;
+      throw new Error(msg);
     }
 
-    const dimensions = {
-      pdpAreaCm2: pdpArea,
-      estimatedPackageType: 'RECTANGULAR' as const,
-      minRequiredFontHeightMm: minFont,
-      detectedMinFontHeightMm: /small/i.test(name) ? 1.2 : 2.5
-    };
-
-    const ruleChecks = evaluateLegalMetrologyRules(extractedFields, dimensions, isImported);
-    const score = calculateComplianceScore(ruleChecks);
-
-    return {
-      id: `LM-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      barcode: `890${Math.floor(1000000000 + Math.random() * 9000000000)}`,
-      productName: name.replace(/\.[^/.]+$/, "").replace(/_/g, " "),
-      brandName: 'Scanned Commodity Brand',
-      category: 'General Commodities',
-      manufacturerName: 'Apex Consumer Products Ltd',
-      countryOfOrigin: isImported ? 'Germany' : 'India',
-      imageUrl: payload.imageUrl,
-      scannedAt: new Date().toISOString(),
-      inspectorName: payload.inspectorName || 'Inspector Officer',
-      inspectorLocation: payload.inspectorLocation || 'Zone 4 Field Unit',
-      dimensions,
-      extractedFields,
-      ruleChecks,
-      overallScore: score.score,
-      overallStatus: score.status,
-      violationsCount: score.violationsCount,
-      enforcementStatus: score.status === 'NON_COMPLIANT' ? 'UNDER_INSPECTION' : 'CLOSED_COMPLIANT'
-    };
+    const data = await res.json();
+    const product: ScannedProduct = data.product;
+    if (data.preprocessingStages) product.preprocessingStages = data.preprocessingStages;
+    if (data.opencvMetadata) product.opencvMetadata = data.opencvMetadata;
+    return this.normalizeProduct(product);
   }
 
   static async issueStatutoryNotice(id: string, data: { noticeNumber?: string; penaltyAmount?: number; hearingDate?: string; notes?: string }): Promise<ScannedProduct> {
@@ -282,7 +227,7 @@ export class ApiService {
         return json.product;
       }
     } catch (e) {
-      // Fallback
+      // Local fallback
     }
 
     const product = await this.fetchProductById(id);

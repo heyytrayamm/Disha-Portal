@@ -10,9 +10,9 @@ class ScanRecord(Base):
     id = Column(String, primary_key=True, default=lambda: f"LM-2026-{uuid.uuid4().hex[:6].upper()}")
     barcode = Column(String, nullable=True, index=True)
     product_name = Column(String, nullable=False, index=True)
-    brand_name = Column(String, nullable=False, index=True)
+    brand_name = Column(String, nullable=True, index=True)
     category = Column(String, nullable=False, default="General Commodities")
-    manufacturer_name = Column(String, nullable=False)
+    manufacturer_name = Column(String, nullable=True)
     importer_name = Column(String, nullable=True)
     country_of_origin = Column(String, nullable=True, default="India")
     image_url = Column(String, nullable=False)
@@ -27,9 +27,9 @@ class ScanRecord(Base):
     detected_min_font_mm = Column(Float, nullable=False, default=2.0)
     
     # Score & Status
-    overall_score = Column(Float, nullable=False, default=100.0)
-    overall_status = Column(String, nullable=False, default="COMPLIANT") # COMPLIANT, NON_COMPLIANT, NEEDS_REVIEW
-    enforcement_status = Column(String, nullable=False, default="UNDER_INSPECTION") # UNDER_INSPECTION, NOTICE_ISSUED, CLOSED_COMPLIANT
+    overall_score = Column(Float, nullable=True, default=100.0)
+    overall_status = Column(String, nullable=False, default="COMPLIANT") # COMPLIANT, NON_COMPLIANT, NEEDS_REVIEW, UNABLE_TO_ASSESS
+    enforcement_status = Column(String, nullable=False, default="UNDER_INSPECTION") # UNDER_INSPECTION, NOTICE_ISSUED, CLOSED_COMPLIANT, UNABLE_TO_ASSESS
     
     # Violations tally
     critical_violations = Column(Integer, default=0)

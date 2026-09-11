@@ -28,6 +28,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [pipelineStep, setPipelineStep] = useState(0);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -49,6 +50,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
       setCapturedImageDataUrl(null);
       setSelectedFile(null);
       setCameraError(null);
+      setAnalysisError(null);
       setPipelineStep(0);
     }
   }, [isOpen]);
@@ -136,15 +138,16 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
     if (!capturedImageDataUrl && !selectedFile) return;
 
     stopCamera();
+    setAnalysisError(null);
     setActiveMode('ANALYZING');
     setPipelineStep(1);
 
     // Visual step progress simulation
-    setTimeout(() => setPipelineStep(2), 800);
-    setTimeout(() => setPipelineStep(3), 1600);
-    setTimeout(() => setPipelineStep(4), 2400);
-    setTimeout(() => setPipelineStep(5), 3200);
-    setTimeout(() => setPipelineStep(6), 4000);
+    const t2 = setTimeout(() => setPipelineStep(2), 700);
+    const t3 = setTimeout(() => setPipelineStep(3), 1400);
+    const t4 = setTimeout(() => setPipelineStep(4), 2100);
+    const t5 = setTimeout(() => setPipelineStep(5), 2800);
+    const t6 = setTimeout(() => setPipelineStep(6), 3500);
 
     try {
       let productResult: ScannedProduct | null = null;
@@ -162,38 +165,44 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
         });
       }
 
-      if (!productResult && sampleProducts.length > 0) {
-        productResult = sampleProducts[0];
+      if (!productResult) {
+        throw new Error("No compliance analysis result was received from the server.");
       }
 
-      // Finish analysis after step animations complete
-      setTimeout(() => {
-        if (productResult) {
-          if (onSelectProduct) {
-            onSelectProduct(productResult);
-          }
-          if (onScanComplete && capturedImageDataUrl) {
-            onScanComplete({
-              imageUrl: capturedImageDataUrl,
-              fileName: selectedFile?.name || 'Scanned_Label.jpg',
-              isImported: false,
-              pdpAreaCm2: 180
-            });
-          }
+      // Preserve the CURRENT uploaded image reference for immediate and infallible rendering
+      const currentUploadRef = capturedImageDataUrl || (selectedFile ? URL.createObjectURL(selectedFile) : '');
+      if (currentUploadRef) {
+        productResult.sourceImageUrl = currentUploadRef;
+        if (!productResult.imageUrl || productResult.imageUrl === 'N/A') {
+          productResult.imageUrl = currentUploadRef;
         }
-        onClose();
-        setActiveMode('IDLE');
-      }, 800);
+      }
 
-    } catch (err) {
-      console.error('Scan analysis error:', err);
+      // Finish analysis cleanly with real backend results
       setTimeout(() => {
-        if (sampleProducts.length > 0) {
-          if (onSelectProduct) onSelectProduct(sampleProducts[0]);
+        if (onSelectProduct) {
+          onSelectProduct(productResult!);
+        } else if (onScanComplete && (capturedImageDataUrl || selectedFile)) {
+          onScanComplete({
+            imageUrl: productResult!.imageUrl || currentUploadRef || '',
+            fileName: selectedFile?.name || 'Scanned_Label.jpg',
+            isImported: false,
+            pdpAreaCm2: 180
+          });
         }
         onClose();
         setActiveMode('IDLE');
-      }, 300);
+      }, 500);
+
+    } catch (err: any) {
+      console.error('Scan analysis error:', err);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+      clearTimeout(t5);
+      clearTimeout(t6);
+      setAnalysisError(err?.message || 'Unable to complete compliance analysis. Please ensure backend server is running.');
+      setActiveMode('PREVIEW');
     }
   };
 
@@ -320,6 +329,16 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
                 <h4 className="font-headline-md text-headline-md font-semibold text-text-main">Preview Packaging Label Image</h4>
                 <p className="font-label-sm text-label-sm text-text-muted mt-1">Verify that all statutory text declarations are clear and readable</p>
               </div>
+
+              {analysisError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[20px] text-red-600 shrink-0">error</span>
+                  <div>
+                    <p className="font-semibold">Analysis Failed</p>
+                    <p>{analysisError}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="bg-surface-container-low rounded-xl p-3 border border-border-subtle text-center">
                 <img

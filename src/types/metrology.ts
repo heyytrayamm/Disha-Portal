@@ -65,20 +65,23 @@ export interface ScannedProduct {
   importerName?: string;
   countryOfOrigin?: string;
   imageUrl: string;
+  sourceImageUrl?: string;
   scannedAt: string;
   inspectorName: string;
   inspectorLocation: string;
   dimensions: PackageDimensions;
   extractedFields: ExtractedField[];
   ruleChecks: LegalRuleCheck[];
-  overallScore: number; // 0 - 100
-  overallStatus: 'COMPLIANT' | 'NON_COMPLIANT' | 'NEEDS_REVIEW';
+  overallScore: number | null; // 0 - 100 or null if UNABLE_TO_ASSESS
+  overallStatus: 'COMPLIANT' | 'NON_COMPLIANT' | 'NEEDS_REVIEW' | 'UNABLE_TO_ASSESS';
   violationsCount: {
     critical: number;
     major: number;
     minor: number;
   };
-  enforcementStatus: 'UNDER_INSPECTION' | 'NOTICE_ISSUED' | 'COMPOUNDED' | 'CASE_FILED' | 'CLOSED_COMPLIANT';
+  enforcementStatus: 'UNDER_INSPECTION' | 'NOTICE_ISSUED' | 'COMPOUNDED' | 'CASE_FILED' | 'CLOSED_COMPLIANT' | 'UNABLE_TO_ASSESS';
+  isProductLabel?: boolean;
+  message?: string;
   preprocessingStages?: Record<string, string>;
   opencvMetadata?: Record<string, any>;
   noticeDetails?: {

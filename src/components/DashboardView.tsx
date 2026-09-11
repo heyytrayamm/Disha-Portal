@@ -3,6 +3,7 @@ import type { ScannedProduct, ComplianceStats } from '../types/metrology';
 import type { User } from '../types/auth';
 import { generateInitialSampleProducts } from '../services/sampleDataService';
 import { getProductCanonicalStatus, normalizeComplianceStatus } from '../services/complianceStatusHelper';
+import { resolveImageUrl } from '../services/api';
 
 interface DashboardViewProps {
   user?: User | null;
@@ -521,8 +522,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <img 
-                            src={p.imageUrl} 
+                            src={resolveImageUrl(p.sourceImageUrl || p.imageUrl) || p.preprocessingStages?.original || ''} 
                             alt={p.productName} 
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 24 24" fill="none" stroke="%2394a3b8" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
+                            }}
                             className="w-10 h-12 object-cover rounded border border-border-subtle shrink-0" 
                           />
                           <div className="min-w-0">

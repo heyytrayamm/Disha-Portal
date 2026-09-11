@@ -63,37 +63,6 @@ export function App() {
     }
   };
 
-  // Handle Scan Analysis Completion
-  const handleScanComplete = async (payload: {
-    imageUrl: string;
-    fileName: string;
-    isImported: boolean;
-    pdpAreaCm2: number;
-  }) => {
-    setLoading(true);
-    try {
-      const scannedProduct = await ApiService.scanImage({
-        imageUrl: payload.imageUrl,
-        fileName: payload.fileName,
-        inspectorName: user?.full_name || 'Inspector Officer',
-        inspectorLocation: user?.location_unit || 'Zone 4 Inspection Unit',
-        isImported: payload.isImported,
-        pdpAreaCm2: payload.pdpAreaCm2
-      });
-
-      setProducts(prev => [scannedProduct, ...prev]);
-      setSelectedProduct(scannedProduct);
-      setActiveTab('scan');
-      
-      // Refresh stats
-      const freshStats = await ApiService.fetchDashboardStats();
-      setStats(freshStats);
-    } catch (err) {
-      console.error("Scan processing error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Handle Statutory Notice Issue
   const handleIssueNotice = async (updatedProduct: ScannedProduct) => {
@@ -221,13 +190,18 @@ export function App() {
       <ScannerModal
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
-        onSelectProduct={(product) => {
+        onSelectProduct={async (product) => {
           setProducts(prev => [product, ...prev.filter(p => p.id !== product.id)]);
           setSelectedProduct(product);
           setActiveTab('scan');
           setIsScannerOpen(false);
+          try {
+            const freshStats = await ApiService.fetchDashboardStats();
+            setStats(freshStats);
+          } catch (e) {
+            console.warn("Could not refresh dashboard stats:", e);
+          }
         }}
-        onScanComplete={handleScanComplete}
       />
 
       {selectedProduct && (

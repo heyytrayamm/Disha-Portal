@@ -1,8 +1,11 @@
 import cv2
 import numpy as np
 import base64
+import os
 import re
+import urllib.request
 from typing import Tuple, Dict, Any
+from app.core.config import settings
 
 class ImagePreprocessor:
     """
@@ -34,11 +37,23 @@ class ImagePreprocessor:
                     raise ValueError("Failed to decode base64 image data")
                 return img
             else:
-                img = cv2.imread(image_input, cv2.IMREAD_COLOR)
+                target_path = image_input.strip()
+                if "static/uploads/" in target_path:
+                    fname = target_path.split("static/uploads/")[-1]
+                    target_path = os.path.join(settings.UPLOAD_DIR, fname)
+                elif target_path.startswith("http://") or target_path.startswith("https://"):
+                    req = urllib.request.Request(target_path, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req, timeout=10) as response:
+                        img_bytes = response.read()
+                        np_arr = np.frombuffer(img_bytes, np.uint8)
+                        img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+                        if img is None:
+                            raise ValueError(f"Failed to decode image from URL: {image_input}")
+                        return img
+                
+                img = cv2.imread(target_path, cv2.IMREAD_COLOR)
                 if img is None:
-                    canvas = np.ones((600, 800, 3), dtype=np.uint8) * 245
-                    cv2.putText(canvas, "Scanned Label Image", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (30, 30, 30), 2)
-                    return canvas
+                    raise ValueError(f"Image not found or unreadable: {image_input}")
                 return img
 
         raise ValueError("Unsupported image input type")

@@ -40,11 +40,26 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         {"month": "Sep 2026", "compliant": total_compliant, "nonCompliant": total_non_compliant}
     ]
 
+    # Dynamically aggregate top non-compliant brands from actual scan records
+    brand_stats: dict = {}
+    for r in records:
+        b = (r.brand_name or r.manufacturer_name or "").strip()
+        if not b or b in ["N/A", "NOT DETECTED", "Scanned Commodity Brand", "Unclassified"]:
+            continue
+        if b not in brand_stats:
+            brand_stats[b] = {"total": 0, "violations": 0, "compliant": 0}
+        brand_stats[b]["total"] += 1
+        brand_stats[b]["violations"] += (r.critical_violations or 0) + (r.major_violations or 0) + (r.minor_violations or 0)
+        if r.overall_status in ["COMPLIANT", "PASS", "PASSED"]:
+            brand_stats[b]["compliant"] += 1
+
     top_non_compliant_brands = [
-        {"brand": "QuickBite Foods Pvt Ltd", "violationsCount": 18, "passRate": 42.0},
-        {"brand": "Apex Consumer Products Ltd", "violationsCount": 14, "passRate": 65.0},
-        {"brand": "Global Import Traders", "violationsCount": 11, "passRate": 52.0},
-        {"brand": "Sunrise Beverages India", "violationsCount": 9, "passRate": 71.0}
+        {
+            "brand": b,
+            "violationsCount": data["violations"],
+            "passRate": round((data["compliant"] / data["total"] * 100), 1) if data["total"] > 0 else 0.0
+        }
+        for b, data in sorted(brand_stats.items(), key=lambda x: x[1]["violations"], reverse=True)[:5]
     ]
 
     return {

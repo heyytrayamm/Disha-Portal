@@ -1,6 +1,6 @@
 import type { LegalRuleCheck } from '../types/metrology';
 
-export type CanonicalStatus = 'PASS' | 'REVIEW' | 'FAIL';
+export type CanonicalStatus = 'PASS' | 'REVIEW' | 'FAIL' | 'UNABLE_TO_ASSESS';
 
 /**
  * Determines compliance status based on score and number of failed requirements:
@@ -30,13 +30,22 @@ export function calculateComplianceStatusFromScore(
 }
 
 /**
- * Single source of truth to get the canonical status ('PASS' | 'REVIEW' | 'FAIL') for any product
+ * Single source of truth to get the canonical status ('PASS' | 'REVIEW' | 'FAIL' | 'UNABLE_TO_ASSESS') for any product
  */
 export function getProductCanonicalStatus(product: {
   overallScore?: number | null;
   ruleChecks?: LegalRuleCheck[];
   overallStatus?: string | null;
 }): CanonicalStatus {
+  if (product.overallStatus === 'UNABLE_TO_ASSESS') {
+    return 'UNABLE_TO_ASSESS';
+  }
+  if (product.overallScore === null || product.overallScore === undefined) {
+    if (product.overallStatus) {
+      return normalizeComplianceStatus(product.overallStatus);
+    }
+    return 'UNABLE_TO_ASSESS';
+  }
   if (typeof product.overallScore === 'number' && product.overallScore > 0) {
     const failedChecks = product.ruleChecks?.filter(r => r.status === 'FAIL') || [];
     return calculateComplianceStatusFromScore(
@@ -48,9 +57,6 @@ export function getProductCanonicalStatus(product: {
   if (product.overallStatus) {
     return normalizeComplianceStatus(product.overallStatus);
   }
-  if (typeof product.overallScore === 'number') {
-    return calculateComplianceStatusFromScore(product.overallScore, 0, false);
-  }
   return 'REVIEW';
 }
 
@@ -60,6 +66,9 @@ export function getProductCanonicalStatus(product: {
 export function normalizeComplianceStatus(status?: string | null): CanonicalStatus {
   if (!status) return 'REVIEW';
   const s = String(status).toUpperCase().trim();
+  if (s === 'UNABLE_TO_ASSESS' || s === 'UNABLE TO ASSESS' || s === 'UNABLE_ASSESS') {
+    return 'UNABLE_TO_ASSESS';
+  }
   if (s === 'COMPLIANT' || s === 'PASS' || s === 'PASSED') {
     return 'PASS';
   }
@@ -84,10 +93,26 @@ export interface ComplianceRemarksData {
  * Generates dynamic, context-aware remarks & compliance observations
  */
 export function getComplianceRemarks(
-  score: number,
+  score: number | null,
   status: CanonicalStatus,
   ruleChecks: LegalRuleCheck[] = []
 ): ComplianceRemarksData {
+  if (status === 'UNABLE_TO_ASSESS' || score === null || score === undefined) {
+    return {
+      headline: 'Unable to Assess Compliance',
+      summary: 'The uploaded image does not appear to contain a readable packaged commodity label. Please upload a clear product-label image.',
+      observations: [
+        'No statutory packaged commodity declarations (MRP, Net Quantity, Mfg Date, Packer Details) could be verified.',
+        'Non-packaging imagery (e.g. human face, portrait, blank, landscape, or generic document) was detected.'
+      ],
+      actionItems: [
+        'Upload a clear, front-facing photograph or scan of a pre-packaged commodity label.',
+        'Ensure adequate lighting and that mandatory statutory declarations are clearly visible.'
+      ],
+      isAttentionRequired: true
+    };
+  }
+
   const failedChecks = ruleChecks.filter(r => r.status === 'FAIL');
   const warningChecks = ruleChecks.filter(r => r.status === 'WARNING');
   const missingOrFailedFields = failedChecks.map(r => r.title);
@@ -108,12 +133,10 @@ export function getComplianceRemarks(
 
   // 2. PASS WITH 1-2 MINOR / NON-CRITICAL MISSING FIELDS (Score 80-100)
   if (status === 'PASS') {
-    // Determine specific missing fields text
     const specificFieldsDesc = missingOrFailedFields.length > 0
       ? missingOrFailedFields.join(', ')
       : 'Minor label declarations';
 
-    // Check specifically for Consumer Care telephone number missing
     const hasConsumerCarePhoneMissing = failedChecks.some(r => 
       r.category === 'CONSUMER_CARE' && /telephone|phone/i.test(r.title + ' ' + r.description)
     );
@@ -194,6 +217,15 @@ export function getStatusTheme(status: CanonicalStatus) {
         badgeBorder: 'border-status-fail/20',
         icon: 'cancel',
         colorHex: '#ba1a1a'
+      };
+    case 'UNABLE_TO_ASSESS':
+      return {
+        label: 'UNABLE TO ASSESS',
+        badgeBg: 'bg-slate-500/10',
+        badgeText: 'text-slate-600',
+        badgeBorder: 'border-slate-500/20',
+        icon: 'help',
+        colorHex: '#64748b'
       };
   }
 }

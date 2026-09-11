@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { ScannedProduct } from '../types/metrology';
 import { getProductCanonicalStatus, getComplianceRemarks, getStatusTheme } from '../services/complianceStatusHelper';
+import { resolveImageUrl } from '../services/api';
 
 interface ScanAnalysisViewProps {
   product: ScannedProduct | null;
@@ -20,6 +21,33 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
   onUpdateProduct: _onUpdateProduct,
 }) => {
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [imageLoadFailed, setImageLoadFailed] = useState(false);
+  const [modalImageFailed, setModalImageFailed] = useState(false);
+
+  // Compute the optimal source image URL following the priority order:
+  // 1. product.sourceImageUrl (client-side preview / data URL / blob)
+  // 2. resolveImageUrl(product.imageUrl) (browser-accessible backend URL)
+  // 3. product.preprocessingStages?.original (base64 JPEG data URI from OpenCV)
+  const sourceImageSrc = useMemo(() => {
+    if (!product) return '';
+    const candidates = [
+      product.sourceImageUrl,
+      product.imageUrl,
+      product.preprocessingStages?.original
+    ];
+    for (const c of candidates) {
+      if (c && typeof c === 'string' && c.trim() !== '' && c.trim() !== 'N/A') {
+        const resolved = resolveImageUrl(c);
+        if (resolved) return resolved;
+      }
+    }
+    return '';
+  }, [product?.id, product?.imageUrl, product?.sourceImageUrl, product?.preprocessingStages]);
+
+  useEffect(() => {
+    setImageLoadFailed(false);
+    setModalImageFailed(false);
+  }, [product?.id, sourceImageSrc]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -62,6 +90,7 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
   const isPass = status === 'PASS';
   const isReview = status === 'REVIEW';
   const isFail = status === 'FAIL';
+  const isUnableToAssess = status === 'UNABLE_TO_ASSESS';
   const theme = getStatusTheme(status);
 
   // 2. Rule Check Categorization
@@ -80,11 +109,16 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
       })
     : '';
 
-  const scoreColor = isPass ? 'text-status-pass' : isFail ? 'text-error' : 'text-status-review';
-  const scoreStrokeColor = isPass ? '#10b981' : isFail ? '#ba1a1a' : '#f59e0b';
-  const scoreLabel = product.overallScore >= 80 ? 'Excellent' : product.overallScore >= 60 ? 'Needs Attention' : 'Non-Compliant';
+  const scoreVal = typeof product.overallScore === 'number' ? product.overallScore : null;
+  const scoreColor = isPass ? 'text-status-pass' : isFail ? 'text-error' : isUnableToAssess ? 'text-slate-600' : 'text-status-review';
+  const scoreStrokeColor = isPass ? '#10b981' : isFail ? '#ba1a1a' : isUnableToAssess ? '#94a3b8' : '#f59e0b';
+  const scoreLabel = scoreVal !== null
+    ? (scoreVal >= 80 ? 'Excellent' : scoreVal >= 60 ? 'Needs Attention' : 'Non-Compliant')
+    : 'Unable to Assess';
   const circumference = 2 * Math.PI * 45;
-  const scoreOffset = circumference - (product.overallScore / 100) * circumference;
+  const scoreOffset = scoreVal !== null
+    ? circumference - (scoreVal / 100) * circumference
+    : circumference;
 
   // Quality breakdown scores (from extracted fields confidence)
   const avgConfidence = product.extractedFields?.length > 0
@@ -93,7 +127,9 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
   const completenessScore = Math.round(
     ((product.extractedFields?.filter(f => !f.isMissing).length || 0) / Math.max(product.extractedFields?.length || 1, 1)) * 100
   );
-  const contrastScore = Math.min(100, Math.max(50, product.overallScore - 4 + Math.floor((product.overallScore % 7) * 1.5)));
+  const contrastScore = scoreVal !== null
+    ? Math.min(100, Math.max(50, scoreVal - 4 + Math.floor((scoreVal % 7) * 1.5)))
+    : 0;
 
   // Source Crop Lightbox Modal
   const renderCropModal = () => {
@@ -142,12 +178,13 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
 
           {/* Modal Body */}
           <div className="p-6 flex flex-col items-center justify-center overflow-y-auto max-h-[calc(90vh-140px)]">
-            {product.imageUrl ? (
+            {sourceImageSrc && !modalImageFailed ? (
               <div className="w-full flex flex-col items-center gap-4">
                 <div className="relative border border-border-subtle rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center w-full max-h-[480px]">
                   <img 
-                    src={product.imageUrl} 
+                    src={sourceImageSrc} 
                     alt="High-resolution Source Crop" 
+                    onError={() => setModalImageFailed(true)}
                     className="w-full max-h-[480px] object-contain rounded-lg shadow-inner"
                   />
                 </div>
@@ -158,7 +195,7 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
                     <span>Preprocessed via OpenCV & OCR pipeline</span>
                   </div>
                   <span className="font-mono text-text-main font-semibold">
-                    Status: {status} ({product.overallScore}/100)
+                    Status: {status} ({product.overallScore !== null ? `${product.overallScore}/100` : 'N/A'})
                   </span>
                 </div>
               </div>
@@ -167,10 +204,21 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
                 <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-3">
                   <span className="material-symbols-outlined text-[24px]">image_not_supported</span>
                 </div>
-                <p className="font-semibold text-text-main text-sm">Source crop is not available for this field.</p>
+                <p className="font-semibold text-text-main text-sm">Source image unavailable</p>
                 <p className="text-xs text-text-muted mt-1 max-w-xs">
-                  No direct image crop data was returned by the OCR engine for this specific scan record.
+                  The original source packaging label could not be loaded.
                 </p>
+                {onOpenScanner && (
+                  <button
+                    onClick={() => {
+                      setIsCropModalOpen(false);
+                      onOpenScanner();
+                    }}
+                    className="mt-3 px-3 py-1.5 text-xs text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">upload</span> Re-upload image
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -250,6 +298,8 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
                 ? 'bg-status-pass/10 text-status-pass border-status-pass/20' 
                 : isFail 
                 ? 'bg-status-fail/10 text-status-fail border-status-fail/20' 
+                : isUnableToAssess
+                ? 'bg-slate-500/10 text-slate-600 border-slate-500/20'
                 : 'bg-status-review/10 text-status-review border-status-review/20'
             }`}>
               <span className="material-symbols-outlined text-[44px]" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -260,13 +310,13 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
             <div className="flex-1 text-center sm:text-left z-10">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1">
                 <h2 className={`font-headline-xl text-headline-xl font-bold tracking-tight ${
-                  isPass ? 'text-status-pass' : isFail ? 'text-status-fail' : 'text-status-review'
+                  isPass ? 'text-status-pass' : isFail ? 'text-status-fail' : isUnableToAssess ? 'text-slate-700' : 'text-status-review'
                 }`}>
-                  {isPass ? 'PASS' : isReview ? 'REVIEW REQUIRED' : 'FAIL'}
+                  {isPass ? 'PASS' : isReview ? 'REVIEW REQUIRED' : isUnableToAssess ? 'UNABLE TO ASSESS' : 'FAIL'}
                 </h2>
                 
                 <span className="font-mono text-sm px-2.5 py-0.5 rounded-md bg-surface-container-high text-text-main font-semibold">
-                  Score: {product.overallScore}/100
+                  Score: {scoreVal !== null ? `${scoreVal}/100` : '-- / N/A'}
                 </span>
 
                 {isPass && failedChecks.length > 0 && (
@@ -287,17 +337,25 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
                     Inspection Pending
                   </span>
                 )}
+                {isUnableToAssess && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
+                    <span className="material-symbols-outlined text-[13px]">help</span>
+                    Non-Packaging Image
+                  </span>
+                )}
               </div>
 
               <p className="font-body-md text-body-md text-text-main">
-                {isPass ? (
+                {isUnableToAssess ? (
+                  product.message || 'The uploaded image does not appear to contain a readable packaged commodity label. Please upload a clear product-label image.'
+                ) : isPass ? (
                   failedChecks.length === 0
                     ? 'Product label satisfies all applicable mandatory checks according to Legal Metrology (Packaged Commodities) Rules, 2011.'
-                    : `Product meets the overall statutory compliance threshold (${product.overallScore}/100). Minor deficiencies observed; please review the compliance observations below.`
+                    : `Product meets the overall statutory compliance threshold (${scoreVal}/100). Minor deficiencies observed; please review the compliance observations below.`
                 ) : isReview ? (
-                  `Product compliance score (${product.overallScore}/100) falls in the review threshold (60–79). Manual inspection or verification is required before clearance.`
+                  `Product compliance score (${scoreVal}/100) falls in the review threshold (60–79). Manual inspection or verification is required before clearance.`
                 ) : (
-                  `Product does not meet mandatory statutory requirements with a score of ${product.overallScore}/100 (below 60). Immediate enforcement or corrective action is required.`
+                  `Product does not meet mandatory statutory requirements with a score of ${scoreVal}/100 (below 60). Immediate enforcement or corrective action is required.`
                 )}
               </p>
             </div>
@@ -554,16 +612,16 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
               </svg>
               <div className="absolute flex flex-col items-center justify-center text-center">
                 <span className={`font-headline-xl text-headline-xl ${scoreColor} leading-none font-bold`}>
-                  {product.overallScore}
+                  {scoreVal !== null ? scoreVal : '--'}
                 </span>
                 <span className="font-label-sm text-label-sm text-text-muted uppercase tracking-wider mt-1">
-                  out of 100
+                  {scoreVal !== null ? 'out of 100' : 'N/A'}
                 </span>
               </div>
             </div>
 
             <div className={`${
-              isPass ? 'bg-status-pass/10 text-status-pass' : isFail ? 'bg-error-container text-error' : 'bg-status-review/10 text-status-review'
+              isPass ? 'bg-status-pass/10 text-status-pass' : isFail ? 'bg-error-container text-error' : isUnableToAssess ? 'bg-slate-100 text-slate-700' : 'bg-status-review/10 text-status-review'
             } font-label-md text-label-md px-3 py-1 rounded-full mb-lg font-semibold`}>
               {scoreLabel}
             </div>
@@ -608,9 +666,14 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
               Source Packaging Label
             </h4>
             <div className="h-48 overflow-hidden relative group rounded-lg border border-border-subtle">
-              {product.imageUrl ? (
+              {sourceImageSrc && !imageLoadFailed ? (
                 <>
-                  <img src={product.imageUrl} alt="Source Image Crop" className="w-full h-full object-cover rounded-lg" />
+                  <img 
+                    src={sourceImageSrc} 
+                    alt="Source Packaging Label" 
+                    onError={() => setImageLoadFailed(true)}
+                    className="w-full h-full object-cover rounded-lg" 
+                  />
                   <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
                       onClick={() => setIsCropModalOpen(true)}
@@ -622,12 +685,18 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
                 </>
               ) : (
                 <div 
-                  onClick={() => setIsCropModalOpen(true)}
-                  className="w-full h-full bg-surface-container-high flex items-center justify-center border border-dashed border-border-subtle rounded-lg cursor-pointer"
+                  onClick={onOpenScanner}
+                  className="w-full h-full bg-surface-container-high flex items-center justify-center border border-dashed border-border-subtle rounded-lg cursor-pointer hover:bg-surface-container transition-colors"
+                  title={onOpenScanner ? "Click to scan or re-upload image" : "Source image unavailable"}
                 >
                   <span className="font-label-md text-label-md text-text-muted flex flex-col items-center gap-2">
-                    <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>image</span>
-                    Source Image Crop
+                    <span className="material-symbols-outlined text-[28px] text-text-muted">image_not_supported</span>
+                    <span className="font-medium text-xs">Source image unavailable</span>
+                    {onOpenScanner && (
+                      <span className="text-[11px] text-primary hover:underline flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px]">upload</span> Re-upload image
+                      </span>
+                    )}
                   </span>
                 </div>
               )}
