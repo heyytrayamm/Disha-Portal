@@ -1,0 +1,287 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LabelCheck Pro - Processing</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#54647a",
+                        "text-muted": "#475569",
+                        "on-primary-container": "#90a8ff",
+                        "status-fail": "#ef4444",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#d0e1fb",
+                        "background": "#f7f9fb",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-tertiary-container": "#f39461",
+                        "on-background": "#191c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "border-subtle": "#e2e8f0",
+                        "status-pass": "#10b981",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "surface-dim": "#d8dadc",
+                        "outline-variant": "#c5c5d3",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-bright": "#f7f9fb",
+                        "primary-fixed": "#dce1ff",
+                        "status-review": "#f59e0b",
+                        "secondary-fixed": "#d3e4fe",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#773205",
+                        "tertiary": "#4b1c00",
+                        "outline": "#757682",
+                        "tertiary-container": "#6e2c00",
+                        "on-tertiary-fixed": "#341100",
+                        "on-primary-fixed": "#00164e",
+                        "surface-container-low": "#f2f4f6",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-variant": "#e0e3e5",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-container": "#eceef0",
+                        "secondary": "#505f76",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "inverse-surface": "#2d3133",
+                        "on-primary-fixed-variant": "#264191",
+                        "primary-container": "#1e3a8a",
+                        "primary": "#00236f",
+                        "surface-tint": "#4059aa",
+                        "surface": "#f7f9fb",
+                        "text-main": "#0f172a",
+                        "on-surface-variant": "#444651",
+                        "on-surface": "#191c1e",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#ffb691",
+                        "tertiary-fixed": "#ffdbcb",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#b6c4ff",
+                        "surface-container-high": "#e6e8ea",
+                        "on-secondary-fixed-variant": "#38485d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "24px",
+                        "base": "4px",
+                        "xs": "4px",
+                        "margin-mobile": "16px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "margin-desktop": "48px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-xl": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: theme('colors.primary-container');
+            box-shadow: 0 0 10px theme('colors.primary-container'), 0 0 20px theme('colors.primary-fixed');
+            animation: scan 2s linear infinite alternate;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(100%); }
+        }
+
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(30, 58, 138, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(30, 58, 138, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(30, 58, 138, 0); }
+        }
+        
+        .loading-dot {
+            animation: dotFade 1.4s infinite ease-in-out both;
+        }
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes dotFade {
+            0%, 80%, 100% { opacity: 0; }
+            40% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-surface text-main font-body-md min-h-screen flex flex-col antialiased">
+<!-- Top Navigation Area - Simplified for transactional processing screen -->
+<header class="bg-surface-container-lowest border-b border-border-subtle flex justify-between items-center w-full px-gutter max-w-[1280px] mx-auto h-16 sticky top-0 z-50">
+<div class="flex items-center gap-md">
+<img alt="Disha Logo" class="w-8 h-8 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQudrChEkG7-zEnIycCgXHjQ2whWNKDXKeF5t9qlPMzZ8fP0WdK1Q2609YZLsfEOT0NcqtkgFSXUimigjo4u-unmWmQ9vX4f2E_VfbInkAxl1KAGX_79Rq7g4suH1dp2HlDLPxaO1LPVudevP3q46NyolnHBYUBM5whjTLSgA_MmMhdZ2LI_-cMDy17k0AJU6ZMSChk4t9AzwtKkpD7tTgjRWmMzJ5KPvvUiEvxL0FaPEV46OQdGGSAQ">
+<span class="font-headline-md text-headline-md font-bold text-primary">Disha</span>
+</div>
+<div class="flex items-center gap-sm text-text-muted">
+
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow flex flex-col items-center justify-center p-gutter max-w-[1280px] mx-auto w-full gap-xl">
+<div class="text-center space-y-sm">
+<h1 class="font-headline-xl text-headline-xl text-primary">Processing Label Data</h1>
+<p class="font-body-lg text-body-lg text-text-muted flex items-center justify-center gap-xs">
+                Analyzing product label for regulatory compliance 
+                <span class="flex">
+<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>
+</span>
+</p>
+</div>
+<div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-lg items-start">
+<!-- Left: Visualization Canvas -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-md flex flex-col shadow-sm relative overflow-hidden h-[400px]">
+<div class="absolute inset-0 z-0 opacity-20 filter blur-sm">
+<div class="bg-cover bg-center w-full h-full" data-alt="A blurred, high-tech looking product label with various nutritional facts and ingredient lists, illuminated by a cool, blue light typical of a modern, sterile laboratory setting. The text is intentionally illegible, conveying a sense of data being processed. The overall aesthetic is clean, professional, and consistent with government compliance software." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDib6dUvFOeFYq4KsiuWe4OWahk8xDxl592wYodRZXq7PZ0u69y8MxHNhVJi34HMANe6F-k1kA0WCw7hzB6bFo2fCQvgIK9hJmhVxWgDRoyrH8UHaiW71hKkhgveZNbfNv1fOEzr6h73iPmDfAKxsTUHl1Qmwkl_oy7forNDmyR_7HPdzjO2qjUYRsi69lwzu5kHEEd5kZAuU0S3-aREDpD5hc6HVUPPIZ8l_B1r3_nQBMP8eLpxOEQzA')"></div>
+</div>
+<div class="relative z-10 flex-grow flex items-center justify-center">
+<div class="relative w-64 h-64 border-2 border-primary-container/30 rounded-lg overflow-hidden bg-surface-container-lowest/80 backdrop-blur-md">
+<!-- Abstract label representation inside scanner -->
+<div class="absolute inset-4 border border-border-subtle opacity-50 flex flex-col gap-sm p-sm">
+<div class="w-3/4 h-4 bg-outline-variant rounded"></div>
+<div class="w-1/2 h-3 bg-outline-variant rounded"></div>
+<div class="w-full h-16 bg-surface-variant rounded mt-sm"></div>
+<div class="flex gap-xs mt-auto">
+<div class="w-8 h-8 bg-surface-variant rounded-full"></div>
+<div class="w-8 h-8 bg-surface-variant rounded-full"></div>
+</div>
+</div>
+<!-- Scanning Line -->
+<div class="scan-line"></div>
+<!-- Focus Corners -->
+<div class="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-primary-container"></div>
+<div class="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-primary-container"></div>
+<div class="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-primary-container"></div>
+<div class="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-primary-container"></div>
+</div>
+</div>
+<div class="relative z-10 mt-auto bg-surface-container-lowest border border-border-subtle rounded-lg p-sm flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary-container animate-spin" style="animation-duration: 3s;">settings</span>
+<span class="font-label-md text-label-md text-text-muted uppercase">Engine Status</span>
+</div>
+<span class="font-label-md text-label-md text-primary-container bg-secondary-container px-2 py-1 rounded">Active</span>
+</div>
+</div>
+<!-- Right: Pipeline Progress -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-lg flex flex-col shadow-sm">
+<h2 class="font-headline-md text-headline-md text-text-main border-b border-border-subtle pb-sm mb-md">Audit Pipeline Status</h2>
+<div class="flex flex-col gap-md relative">
+<!-- Vertical tracking line -->
+<div class="absolute left-[11px] top-4 bottom-4 w-[2px] bg-border-subtle z-0"></div>
+<!-- Step 1: Done -->
+<div class="flex items-start gap-md relative z-10">
+<div class="w-6 h-6 rounded-full bg-status-pass text-on-primary flex items-center justify-center shrink-0 mt-0.5 ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="flex-grow">
+<h3 class="font-label-md text-label-md text-text-main">Image Quality Check</h3>
+<p class="font-body-md text-body-md text-text-muted mt-xs">Resolution and lighting validated.</p>
+</div>
+</div>
+<!-- Step 2: Done -->
+<div class="flex items-start gap-md relative z-10">
+<div class="w-6 h-6 rounded-full bg-status-pass text-on-primary flex items-center justify-center shrink-0 mt-0.5 ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="flex-grow">
+<h3 class="font-label-md text-label-md text-text-main">OCR Extraction</h3>
+<p class="font-body-md text-body-md text-text-muted mt-xs">Text layers successfully separated and digitized.</p>
+</div>
+</div>
+<!-- Step 3: Done -->
+<div class="flex items-start gap-md relative z-10">
+<div class="w-6 h-6 rounded-full bg-status-pass text-on-primary flex items-center justify-center shrink-0 mt-0.5 ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="flex-grow">
+<h3 class="font-label-md text-label-md text-text-main">Label Info Detection</h3>
+<p class="font-body-md text-body-md text-text-muted mt-xs">Nutritional facts and ingredients mapped.</p>
+</div>
+</div>
+<!-- Step 4: In Progress -->
+<div class="flex items-start gap-md relative z-10 bg-surface-container-low p-sm -ml-sm rounded-lg border border-border-subtle">
+<div class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center shrink-0 mt-0.5 ring-4 ring-surface-container-lowest pulse-ring">
+<span class="material-symbols-outlined text-[16px] animate-spin" style="animation-duration: 2s;">sync</span>
+</div>
+<div class="flex-grow">
+<h3 class="font-label-md text-label-md text-primary-container">Rule Matching</h3>
+<p class="font-body-md text-body-md text-text-main mt-xs">Comparing extracted data against FSSAI guidelines...</p>
+<div class="w-full bg-surface-variant h-1 mt-sm rounded-full overflow-hidden">
+<div class="bg-primary-container h-full w-2/3 rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Step 5: Pending -->
+<div class="flex items-start gap-md relative z-10 opacity-50">
+<div class="w-6 h-6 rounded-full bg-surface-variant text-text-muted flex items-center justify-center shrink-0 mt-0.5 ring-4 ring-surface-container-lowest border border-border-subtle">
+<span class="font-label-md text-label-md">5</span>
+</div>
+<div class="flex-grow">
+<h3 class="font-label-md text-label-md text-text-muted">Compliance Assessment</h3>
+<p class="font-body-md text-body-md text-text-muted mt-xs">Pending rule evaluation.</p>
+</div>
+</div>
+<!-- Step 6: Pending -->
+<div class="flex items-start gap-md relative z-10 opacity-50">
+<div class="w-6 h-6 rounded-full bg-surface-variant text-text-muted flex items-center justify-center shrink-0 mt-0.5 ring-4 ring-surface-container-lowest border border-border-subtle">
+<span class="font-label-md text-label-md">6</span>
+</div>
+<div class="flex-grow">
+<h3 class="font-label-md text-label-md text-text-muted">Score Calculation</h3>
+<p class="font-body-md text-body-md text-text-muted mt-xs">Pending assessment completion.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-lg">
+<button class="bg-surface-container-lowest border border-border-subtle text-primary-container px-lg py-sm rounded-md font-label-md text-label-md hover:bg-surface-container-low transition-colors flex items-center gap-sm shadow-sm">
+<span class="material-symbols-outlined text-[18px]">cancel</span>
+                Cancel Audit
+            </button>
+</div>
+</main>
+
+
+</body></html>

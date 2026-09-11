@@ -1,0 +1,319 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Disha - Reports &amp; Analytics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#54647a",
+                        "text-muted": "#475569",
+                        "on-primary-container": "#90a8ff",
+                        "status-fail": "#ef4444",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#d0e1fb",
+                        "background": "#f7f9fb",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-tertiary-container": "#f39461",
+                        "on-background": "#191c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "border-subtle": "#e2e8f0",
+                        "status-pass": "#10b981",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "surface-dim": "#d8dadc",
+                        "outline-variant": "#c5c5d3",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-bright": "#f7f9fb",
+                        "primary-fixed": "#dce1ff",
+                        "status-review": "#f59e0b",
+                        "secondary-fixed": "#d3e4fe",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#773205",
+                        "tertiary": "#4b1c00",
+                        "outline": "#757682",
+                        "tertiary-container": "#6e2c00",
+                        "on-tertiary-fixed": "#341100",
+                        "on-primary-fixed": "#00164e",
+                        "surface-container-low": "#f2f4f6",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-variant": "#e0e3e5",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-container": "#eceef0",
+                        "secondary": "#505f76",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "inverse-surface": "#2d3133",
+                        "on-primary-fixed-variant": "#264191",
+                        "primary-container": "#1e3a8a",
+                        "primary": "#00236f",
+                        "surface-tint": "#4059aa",
+                        "surface": "#f7f9fb",
+                        "text-main": "#0f172a",
+                        "on-surface-variant": "#444651",
+                        "on-surface": "#191c1e",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#ffb691",
+                        "tertiary-fixed": "#ffdbcb",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#b6c4ff",
+                        "surface-container-high": "#e6e8ea",
+                        "on-secondary-fixed-variant": "#38485d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "24px",
+                        "base": "4px",
+                        "xs": "4px",
+                        "margin-mobile": "16px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "margin-desktop": "48px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-xl": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .bento-card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            transition: box-shadow 0.2s ease-in-out;
+        }
+        .bento-card:hover {
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased flex">
+<!-- SideNavBar -->
+<nav class="h-screen w-64 fixed left-0 top-0 border-r border-border-subtle bg-surface-container-low flex flex-col py-lg px-md hidden md:flex z-50">
+<div class="flex items-center gap-3 mb-xl">
+<img alt="Disha Logo" class="w-10 h-10 object-contain rounded-lg" src="https://lh3.googleusercontent.com/aida/AEtjO1W9toxfJaFv6RYO-OlrJM-Xl8MiGQtKEyaAePSoNRwhwjLX5S2hXpWBYCCZ6qaF6-D9-22KTP8mjaNZJoiy4575cF9K7cQk0sQtsvBAXiCNpk7mRmGNB-Oqzl_jbWMU3jaWDMYUb8SlhHQ3vbYSgFlRUoflUpBKPyd2DnN8pehJv1cfdQ5_-NBud96Xpalm2xKrhWpj0s_bhVnjEBg4SPugt7fYFK_BbX5TaM8c4C_2hyjtDnNVDNir3cR6">
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Disha</h1>
+
+</div>
+</div>
+<div class="flex-1 flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-secondary group-hover:text-primary">dashboard</span>
+                Overview
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-secondary group-hover:text-primary">document_scanner</span>
+                Live Scan
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary-container text-on-secondary-container font-semibold transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-on-secondary-container">history</span>
+                Audit Logs
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-secondary group-hover:text-primary">settings</span>
+                Settings
+            </a>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-1 md:ml-64 p-margin-mobile md:p-margin-desktop min-h-screen">
+<!-- Header & Filters -->
+<header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-xl gap-4">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-primary mb-1">Reports &amp; Analytics</h2>
+<p class="font-body-md text-body-md text-text-muted">Comprehensive audit trail and compliance metrics.</p>
+</div>
+<div class="flex items-center gap-3 w-full sm:w-auto">
+<div class="relative w-full sm:w-auto">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[20px]">calendar_today</span>
+<select class="w-full sm:w-auto pl-10 pr-8 py-2 bg-surface-container-lowest border border-border-subtle rounded-lg font-body-md text-body-md text-text-main focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 appearance-none cursor-pointer hover:bg-surface-container-low transition-colors">
+<option>Last 30 Days</option>
+<option>Last 7 Days</option>
+<option>This Quarter</option>
+<option>Year to Date</option>
+<option>Custom Range...</option>
+</select>
+</div>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg font-label-md text-label-md hover:bg-primary-container transition-colors shadow-sm flex items-center gap-2 whitespace-nowrap">
+<span class="material-symbols-outlined text-[18px]">download</span> Export
+                </button>
+</div>
+</header>
+<!-- Aggregate Stats (Bento Grid) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-xl">
+<!-- Pass Rate -->
+<div class="bento-card p-md flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md text-text-muted mb-1 uppercase tracking-wider">Overall Pass Rate</p>
+<h3 class="font-headline-xl text-headline-xl text-text-main">92.4%</h3>
+<p class="font-body-md text-body-md text-status-pass flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]">trending_up</span> +1.2% from last period
+                    </p>
+</div>
+<div class="w-16 h-16 rounded-full border-4 border-status-pass flex items-center justify-center relative">
+<div class="absolute inset-0 rounded-full border-4 border-status-pass opacity-20"></div>
+<span class="material-symbols-outlined text-status-pass text-[32px]">verified</span>
+</div>
+</div>
+<!-- Total Inspections -->
+<div class="bento-card p-md flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md text-text-muted mb-1 uppercase tracking-wider">Total Inspections</p>
+<h3 class="font-headline-xl text-headline-xl text-text-main">14,285</h3>
+<p class="font-body-md text-body-md text-text-muted flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]">sync</span> 342 pending review
+                    </p>
+</div>
+<div class="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[32px]">inventory_2</span>
+</div>
+</div>
+<!-- Avg Score -->
+<div class="bento-card p-md flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md text-text-muted mb-1 uppercase tracking-wider">Avg Compliance Score</p>
+<h3 class="font-headline-xl text-headline-xl text-text-main">8.7<span class="text-headline-md text-text-muted">/10</span></h3>
+<p class="font-body-md text-body-md text-status-review flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]">trending_flat</span> Stable trend
+                    </p>
+</div>
+<div class="w-16 h-16 rounded-full border-4 border-status-review flex items-center justify-center relative">
+<div class="absolute inset-0 rounded-full border-4 border-status-review opacity-20"></div>
+<span class="font-headline-md text-headline-md text-text-main">8.7</span>
+</div>
+</div>
+</div>
+<!-- Charts Area -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-lg mb-xl">
+<!-- Pass vs Fail Trend (Placeholder Line Chart) -->
+<div class="bento-card p-lg flex flex-col min-h-[400px]">
+<h3 class="font-headline-md text-headline-md text-text-main border-b border-border-subtle pb-3 mb-4">Inspection Trend (30 Days)</h3>
+<div class="flex-1 flex items-center justify-center relative w-full h-full bg-surface-container-lowest rounded-lg border border-border-subtle overflow-hidden">
+<div class="absolute inset-0 w-full h-full bg-cover bg-center opacity-80" data-alt="A clean, modern data visualization line chart showing a predominantly upward trend in deep primary blue over a subtle grid pattern. The aesthetic is extremely professional, minimalist, light mode, high clarity, government-grade dashboard style with no clutter. Sharp lines, clear data points." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB_TktE9-QNikWyUsHqp8A3mZCumq2vanHGnxpISq_uO-ype7fnSbFgf-y0cdA3XNS1Jsd_ibOruq4CQaNB2KLuyCR1qvjD7gV0jRsKTo6_vVG7cFOQimzD6-SioGRaO69tVn1Hx9O15gq512M5oJ2wdejIh7Gcs5ZAHSFUKimLKdOMk-9dEN_BnCn2dT78bYl9jRNt4OEVw5sfhGwO4BKQG65FVaF-mfn9FvAS7YV6yITzxfOlfwK-0A')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-white/50 to-transparent"></div>
+<div class="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded border border-border-subtle shadow-sm flex gap-3 text-label-md font-label-md">
+<div class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-status-pass"></div> Pass</div>
+<div class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-status-fail"></div> Fail</div>
+</div>
+</div>
+</div>
+<!-- Most Common Violations (Placeholder Bar Chart) -->
+<div class="bento-card p-lg flex flex-col min-h-[400px]">
+<h3 class="font-headline-md text-headline-md text-text-main border-b border-border-subtle pb-3 mb-4">Top Violations</h3>
+<div class="flex-1 flex items-center justify-center relative w-full h-full bg-surface-container-lowest rounded-lg border border-border-subtle overflow-hidden">
+<div class="absolute inset-0 w-full h-full bg-cover bg-center opacity-80" data-alt="A precise, horizontal bar chart visualization in a modern, light-mode corporate dashboard. The bars are a mix of soft orange and deep blue, clearly illustrating categorical data against a crisp white background with faint structural grid lines. The style is highly analytical, clean, and sparse." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDHXquATLD2RkjWSz-BcXwuibzDBkmPBJFWer_b0O4CcShSryEnaPY7L-NXEONGottphJv04jlZIZ5vIvjpFIn4G1VG3J6k6vqbSiBg0Ok9Ec2mOjBZyx-03OiC1kwEQvkgkt5_O5DO9otw7lpqm9N2HEj9M32sNUMK_ynzHa_TR947tx7Ff16ka5PQQEmFD4tl-Ip7vzS2oWzG-fJZhOoMuWXKlxdY_dghx5GlGts1ECrMdX4devV0-Q')"></div>
+</div>
+</div>
+</div>
+<!-- Data Dense Table (Category Compliance) -->
+<div class="bento-card p-md">
+<div class="flex items-center justify-between mb-4 px-2">
+<h3 class="font-headline-md text-headline-md text-text-main">Category Compliance Detail</h3>
+<button class="text-primary hover:text-primary-container font-label-md text-label-md flex items-center gap-1">
+                    View All <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-border-subtle">
+<th class="py-3 px-4 font-label-md text-label-md text-text-muted uppercase">Category</th>
+<th class="py-3 px-4 font-label-md text-label-md text-text-muted uppercase">Volume</th>
+<th class="py-3 px-4 font-label-md text-label-md text-text-muted uppercase">Compliance Rate</th>
+<th class="py-3 px-4 font-label-md text-label-md text-text-muted uppercase">Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-border-subtle hover:bg-surface-container-lowest transition-colors h-12">
+<td class="py-2 px-4 font-body-md text-body-md text-text-main font-medium">Nutritional Facts</td>
+<td class="py-2 px-4 font-body-md text-body-md text-text-muted">5,230</td>
+<td class="py-2 px-4">
+<div class="flex items-center gap-2">
+<div class="w-full bg-surface-container-high rounded-full h-2 max-w-[100px]">
+<div class="bg-status-pass h-2 rounded-full" style="width: 98%"></div>
+</div>
+<span class="font-label-md text-label-md">98%</span>
+</div>
+</td>
+<td class="py-2 px-4">
+<span class="inline-flex items-center gap-1 bg-status-pass/10 text-status-pass px-2 py-1 rounded font-label-sm text-label-sm border border-status-pass/20">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Optimal
+                                </span>
+</td>
+</tr>
+<tr class="border-b border-border-subtle hover:bg-surface-container-lowest transition-colors h-12">
+<td class="py-2 px-4 font-body-md text-body-md text-text-main font-medium">Ingredient List</td>
+<td class="py-2 px-4 font-body-md text-body-md text-text-muted">4,102</td>
+<td class="py-2 px-4">
+<div class="flex items-center gap-2">
+<div class="w-full bg-surface-container-high rounded-full h-2 max-w-[100px]">
+<div class="bg-status-review h-2 rounded-full" style="width: 85%"></div>
+</div>
+<span class="font-label-md text-label-md">85%</span>
+</div>
+</td>
+<td class="py-2 px-4">
+<span class="inline-flex items-center gap-1 bg-status-review/10 text-status-review px-2 py-1 rounded font-label-sm text-label-sm border border-status-review/20">
+<span class="material-symbols-outlined text-[14px]">warning</span> Monitor
+                                </span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors h-12">
+<td class="py-2 px-4 font-body-md text-body-md text-text-main font-medium">Allergen Warnings</td>
+<td class="py-2 px-4 font-body-md text-body-md text-text-muted">3,850</td>
+<td class="py-2 px-4">
+<div class="flex items-center gap-2">
+<div class="w-full bg-surface-container-high rounded-full h-2 max-w-[100px]">
+<div class="bg-status-fail h-2 rounded-full" style="width: 72%"></div>
+</div>
+<span class="font-label-md text-label-md">72%</span>
+</div>
+</td>
+<td class="py-2 px-4">
+<span class="inline-flex items-center gap-1 bg-status-fail/10 text-status-fail px-2 py-1 rounded font-label-sm text-label-sm border border-status-fail/20">
+<span class="material-symbols-outlined text-[14px]">error</span> Action Req
+                                </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+
+
+</body></html>

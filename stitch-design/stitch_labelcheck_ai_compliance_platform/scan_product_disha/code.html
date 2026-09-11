@@ -1,0 +1,356 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Disha - Scan Product Label</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-container": "#54647a",
+                      "text-muted": "#475569",
+                      "on-primary-container": "#90a8ff",
+                      "status-fail": "#ef4444",
+                      "on-primary": "#ffffff",
+                      "secondary-container": "#d0e1fb",
+                      "background": "#f7f9fb",
+                      "on-secondary": "#ffffff",
+                      "inverse-on-surface": "#eff1f3",
+                      "on-tertiary-container": "#f39461",
+                      "on-background": "#191c1e",
+                      "surface-container-lowest": "#ffffff",
+                      "border-subtle": "#e2e8f0",
+                      "status-pass": "#10b981",
+                      "primary-fixed-dim": "#b6c4ff",
+                      "surface-dim": "#d8dadc",
+                      "outline-variant": "#c5c5d3",
+                      "on-secondary-fixed": "#0b1c30",
+                      "surface-bright": "#f7f9fb",
+                      "primary-fixed": "#dce1ff",
+                      "status-review": "#f59e0b",
+                      "secondary-fixed": "#d3e4fe",
+                      "error-container": "#ffdad6",
+                      "on-tertiary-fixed-variant": "#773205",
+                      "tertiary": "#4b1c00",
+                      "outline": "#757682",
+                      "tertiary-container": "#6e2c00",
+                      "on-tertiary-fixed": "#341100",
+                      "on-primary-fixed": "#00164e",
+                      "surface-container-low": "#f2f4f6",
+                      "on-tertiary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "surface-variant": "#e0e3e5",
+                      "surface-container-highest": "#e0e3e5",
+                      "surface-container": "#eceef0",
+                      "secondary": "#505f76",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "inverse-surface": "#2d3133",
+                      "on-primary-fixed-variant": "#264191",
+                      "primary-container": "#1e3a8a",
+                      "primary": "#00236f",
+                      "surface-tint": "#4059aa",
+                      "surface": "#f7f9fb",
+                      "text-main": "#0f172a",
+                      "on-surface-variant": "#444651",
+                      "on-surface": "#191c1e",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed-dim": "#ffb691",
+                      "tertiary-fixed": "#ffdbcb",
+                      "on-error": "#ffffff",
+                      "inverse-primary": "#b6c4ff",
+                      "surface-container-high": "#e6e8ea",
+                      "on-secondary-fixed-variant": "#38485d"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "lg": "24px",
+                      "xl": "32px",
+                      "gutter": "24px",
+                      "base": "4px",
+                      "xs": "4px",
+                      "margin-mobile": "16px",
+                      "md": "16px",
+                      "sm": "8px",
+                      "margin-desktop": "48px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-xl": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-xl": [
+                              "36px",
+                              {
+                                      "lineHeight": "44px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .upload-zone {
+            transition: all 0.2s ease-in-out;
+            border-style: dashed;
+        }
+        .upload-zone.dragover {
+            background-color: theme('colors.secondary-container');
+            border-color: theme('colors.primary');
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md">
+<!-- TopNavBar -->
+<nav class="bg-surface dark:bg-on-background docked full-width top-0 border-b border-border-subtle dark:border-outline flat no shadows">
+<div class="flex justify-between items-center w-full px-gutter max-w-[1280px] mx-auto h-16">
+<!-- Brand -->
+<div class="flex items-center gap-sm">
+<img alt="Disha Logo" class="h-8 w-8 object-contain rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQudrChEkG7-zEnIycCgXHjQ2whWNKDXKeF5t9qlPMzZ8fP0WdK1Q2609YZLsfEOT0NcqtkgFSXUimigjo4u-unmWmQ9vX4f2E_VfbInkAxl1KAGX_79Rq7g4suH1dp2HlDLPxaO1LPVudevP3q46NyolnHBYUBM5whjTLSgA_MmMhdZ2LI_-cMDy17k0AJU6ZMSChk4t9AzwtKkpD7tTgjRWmMzJ5KPvvUiEvxL0FaPEV46OQdGGSAQ">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">Disha</span>
+</div>
+<!-- Nav Links (Desktop) -->
+<div class="hidden md:flex gap-lg items-center h-full">
+<a class="h-full flex items-center text-text-muted dark:text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-80" href="#">Dashboard</a>
+<a class="h-full flex items-center text-primary dark:text-primary-fixed border-b-2 border-primary dark:border-primary-fixed pb-1 cursor-pointer active:opacity-80" href="#">Scan</a>
+<a class="h-full flex items-center text-text-muted dark:text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-80" href="#">History</a>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-md">
+<button aria-label="Notifications" class="p-2 rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-text-muted">notifications</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-high border border-border-subtle overflow-hidden">
+<img alt="Inspector Profile" class="object-cover w-full h-full" data-alt="A professional headshot of an inspector in uniform, bright neutral background, modern corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEfCWul_7mf0-B6i9_NielzW192O6pk3ocB4IHkL6biHMH_1Sjee3uiscxShhaHWJh7Kves0QQtV6rlgGIuYccUJmxHWTZD-kNDKFoYVg_6b2JupdtBvY_XB9KdD_Gqr9963cS9ZNEk7-I6G73Yirn8TioqHTPS8cgx2wLt5YLEwgDCzzBv9cHKN7Gf-XysyxOI_48BylRiRK_DpdvjRUMnajf3OtLXEuLGdMZNZL7cotnlwT4-65zRw">
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="max-w-[1280px] mx-auto px-gutter py-margin-desktop">
+<!-- Header Section -->
+<div class="mb-xl text-center md:text-left">
+<h1 class="font-headline-xl text-headline-xl text-primary mb-sm">Scan Product Label</h1>
+<p class="font-body-lg text-body-lg text-text-muted max-w-2xl">Capture or upload a clear image of the product label to begin verification.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+<!-- Upload Area (Main Column) -->
+<div class="lg:col-span-2 flex flex-col gap-md">
+<!-- Drag & Drop Zone -->
+<div class="upload-zone flex flex-col items-center justify-center p-xl border-2 border-border-subtle rounded-xl bg-surface-container-lowest min-h-[400px] cursor-pointer" id="drop-zone">
+<div class="h-16 w-16 bg-primary-container text-on-primary rounded-full flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-[32px]">upload_file</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-xs">Drag and drop label image here</h3>
+<p class="font-body-md text-body-md text-text-muted mb-lg">Supports JPG, PNG, WebP (Max 10MB)</p>
+<div class="flex flex-wrap gap-md justify-center w-full">
+<button class="flex items-center justify-center gap-xs px-lg py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">photo_camera</span>
+                            Take Photo
+                        </button>
+<button class="flex items-center justify-center gap-xs px-lg py-sm bg-surface-container-lowest border border-border-subtle text-primary rounded-lg font-label-md text-label-md hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]">image</span>
+                            Upload Image
+                        </button>
+<button class="flex items-center justify-center gap-xs px-lg py-sm bg-surface-container-lowest border border-border-subtle text-primary rounded-lg font-label-md text-label-md hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]">collections</span>
+                            Upload Multiple
+                        </button>
+</div>
+</div>
+<!-- Primary Action -->
+<div class="flex justify-end mt-sm">
+<button class="px-xl py-md bg-surface-container-high text-text-muted rounded-lg font-label-md text-label-md cursor-not-allowed transition-all w-full md:w-auto" disabled="" id="start-verification-btn">
+                        Start Verification
+                    </button>
+</div>
+</div>
+<!-- Guidance Column -->
+<div class="lg:col-span-1">
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-md h-full">
+<h3 class="font-headline-md text-headline-md mb-md flex items-center gap-xs text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">rule</span>
+                        Scanning Guidelines
+                    </h3>
+<ul class="flex flex-col gap-sm">
+<li class="flex items-start gap-sm p-sm rounded-lg hover:bg-surface-container-low transition-colors border border-transparent">
+<span class="material-symbols-outlined text-status-pass" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-label-md text-label-md text-text-main mb-xs">Ensure Proper Framing</p>
+<p class="font-body-md text-body-md text-text-muted">The entire label must be visible within the frame.</p>
+</div>
+</li>
+<li class="flex items-start gap-sm p-sm rounded-lg hover:bg-surface-container-low transition-colors border border-transparent">
+<span class="material-symbols-outlined text-status-pass" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-label-md text-label-md text-text-main mb-xs">High Resolution</p>
+<p class="font-body-md text-body-md text-text-muted">Text and barcodes must be legible and in focus.</p>
+</div>
+</li>
+<li class="flex items-start gap-sm p-sm rounded-lg hover:bg-surface-container-low transition-colors border border-transparent">
+<span class="material-symbols-outlined text-status-pass" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-label-md text-label-md text-text-main mb-xs">Avoid Glare &amp; Shadows</p>
+<p class="font-body-md text-body-md text-text-muted">Ensure even lighting across the label surface.</p>
+</div>
+</li>
+<li class="flex items-start gap-sm p-sm rounded-lg hover:bg-surface-container-low transition-colors border border-transparent">
+<span class="material-symbols-outlined text-status-pass" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-label-md text-label-md text-text-main mb-xs">Capture All Sides</p>
+<p class="font-body-md text-body-md text-text-muted">If information spans multiple panels, upload multiple images.</p>
+</div>
+</li>
+</ul>
+<div class="mt-lg p-sm bg-primary-fixed text-primary rounded-lg flex items-start gap-sm border border-primary-fixed-dim">
+<span class="material-symbols-outlined">lightbulb</span>
+<p class="font-label-sm text-label-sm">High-quality scans ensure accurate OCR and faster compliance verification.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Nav Bar (Mobile Only) - Using semantic mapping to 'Scan' -->
+<div class="md:hidden fixed bottom-0 left-0 w-full bg-surface border-t border-border-subtle flex justify-around items-center h-16 z-50">
+<a class="flex flex-col items-center justify-center w-full h-full text-text-muted active:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px]">dashboard</span>
+<span class="font-label-sm text-label-sm">Overview</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-primary bg-secondary-container active:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px]" style="font-variation-settings: 'FILL' 1;">document_scanner</span>
+<span class="font-label-sm text-label-sm font-semibold">Scan</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-text-muted active:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px]">history</span>
+<span class="font-label-sm text-label-sm">History</span>
+</a>
+</div>
+<script>
+        // Simple drag and drop visual feedback
+        const dropZone = document.getElementById('drop-zone');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('dragover');
+        }
+        
+        // Note: Actual file handling and enabling the button would require more logic.
+        // For demonstration, simulating upload enabling the button on click of the zone.
+        dropZone.addEventListener('click', () => {
+             const btn = document.getElementById('start-verification-btn');
+             btn.disabled = false;
+             btn.classList.remove('bg-surface-container-high', 'text-text-muted', 'cursor-not-allowed');
+             btn.classList.add('bg-primary', 'text-on-primary', 'hover:opacity-90', 'cursor-pointer');
+             btn.innerHTML = 'Start Verification <span class="material-symbols-outlined text-[18px] align-middle ml-xs">arrow_forward</span>';
+        });
+
+    </script>
+</body></html>

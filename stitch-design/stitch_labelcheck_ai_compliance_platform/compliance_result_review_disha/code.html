@@ -1,0 +1,336 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LabelCheck - Review Required</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#54647a",
+                        "text-muted": "#475569",
+                        "on-primary-container": "#90a8ff",
+                        "status-fail": "#ef4444",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#d0e1fb",
+                        "background": "#f7f9fb",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-tertiary-container": "#f39461",
+                        "on-background": "#191c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "border-subtle": "#e2e8f0",
+                        "status-pass": "#10b981",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "surface-dim": "#d8dadc",
+                        "outline-variant": "#c5c5d3",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-bright": "#f7f9fb",
+                        "primary-fixed": "#dce1ff",
+                        "status-review": "#f59e0b",
+                        "secondary-fixed": "#d3e4fe",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#773205",
+                        "tertiary": "#4b1c00",
+                        "outline": "#757682",
+                        "tertiary-container": "#6e2c00",
+                        "on-tertiary-fixed": "#341100",
+                        "on-primary-fixed": "#00164e",
+                        "surface-container-low": "#f2f4f6",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-variant": "#e0e3e5",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-container": "#eceef0",
+                        "secondary": "#505f76",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "inverse-surface": "#2d3133",
+                        "on-primary-fixed-variant": "#264191",
+                        "primary-container": "#1e3a8a",
+                        "primary": "#00236f",
+                        "surface-tint": "#4059aa",
+                        "surface": "#f7f9fb",
+                        "text-main": "#0f172a",
+                        "on-surface-variant": "#444651",
+                        "on-surface": "#191c1e",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#ffb691",
+                        "tertiary-fixed": "#ffdbcb",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#b6c4ff",
+                        "surface-container-high": "#e6e8ea",
+                        "on-secondary-fixed-variant": "#38485d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "24px",
+                        "base": "4px",
+                        "xs": "4px",
+                        "margin-mobile": "16px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "margin-desktop": "48px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-xl": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Custom Ring Animation */
+        @keyframes dash {
+          0% { stroke-dasharray: 0, 100; }
+          100% { stroke-dasharray: 68, 100; }
+        }
+        .progress-ring {
+            stroke-dasharray: 68, 100;
+            animation: dash 1.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-low border-r border-border-subtle h-screen w-64 fixed left-0 top-0 flex flex-col py-lg px-md hidden md:flex z-50">
+<div class="flex items-center gap-sm mb-xl"><img alt="Disha Logo" class="h-10 w-10 object-contain rounded-lg bg-surface" src="https://lh3.googleusercontent.com/aida/AEtjO1W9toxfJaFv6RYO-OlrJM-Xl8MiGQtKEyaAePSoNRwhwjLX5S2hXpWBYCCZ6qaF6-D9-22KTP8mjaNZJoiy4575cF9K7cQk0sQtsvBAXiCNpk7mRmGNB-Oqzl_jbWMU3jaWDMYUb8SlhHQ3vbYSgFlRUoflUpBKPyd2DnN8pehJv1cfdQ5_-NBud96Xpalm2xKrhWpj0s_bhVnjEBg4SPugt7fYFK_BbX5TaM8c4C_2hyjtDnNVDNir3cR6"><div><h1 class="font-headline-md text-headline-md text-primary">Disha</h1></div></div>
+<ul class="flex-1 space-y-sm">
+<li class="">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="">Overview</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-md px-md py-sm rounded-lg bg-secondary-container text-on-secondary-container font-semibold transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined icon-fill" data-icon="document_scanner">document_scanner</span>
+<span class="">Live Scan</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="">Audit Logs</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="">Settings</span>
+</a>
+</li>
+</ul>
+<div class="pt-lg border-t border-border-subtle mt-auto">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-text-muted text-sm">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-label-md text-label-md text-on-surface truncate">Inspector 042</p>
+<p class="font-label-sm text-label-sm text-text-muted truncate">ID: LC-9982</p>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden bg-background">
+<!-- TopNavBar (Mobile) / Header -->
+<header class="bg-surface border-b border-border-subtle h-16 flex justify-between items-center px-gutter w-full z-40 sticky top-0 md:hidden">
+<div class="flex items-center gap-sm"><img alt="Disha" class="h-8 w-8 object-contain rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQudrChEkG7-zEnIycCgXHjQ2whWNKDXKeF5t9qlPMzZ8fP0WdK1Q2609YZLsfEOT0NcqtkgFSXUimigjo4u-unmWmQ9vX4f2E_VfbInkAxl1KAGX_79Rq7g4suH1dp2HlDLPxaO1LPVudevP3q46NyolnHBYUBM5whjTLSgA_MmMhdZ2LI_-cMDy17k0AJU6ZMSChk4t9AzwtKkpD7tTgjRWmMzJ5KPvvUiEvxL0FaPEV46OQdGGSAQ">
+<span class="font-headline-md text-headline-md font-bold text-primary">Disha</span></div>
+<button class="text-text-muted hover:text-primary transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+</header>
+<div class="flex-1 overflow-y-auto p-margin-mobile md:p-margin-desktop">
+<div class="max-w-[1024px] mx-auto">
+<!-- Page Title -->
+<div class="mb-lg flex items-center justify-between">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-on-surface">Scan Results</h2>
+<p class="font-body-md text-body-md text-text-muted mt-1">Scan ID: #SCN-20231024-89A</p>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg">
+<!-- Main Status Card (Amber/Review Required) - Spans 8 cols -->
+<div class="md:col-span-8 bg-surface-container-lowest border border-status-review/30 rounded-xl overflow-hidden shadow-[0px_4px_12px_rgba(0,0,0,0.02)] relative">
+<!-- Decorative top accent -->
+<div class="h-2 w-full bg-status-review"></div>
+<div class="p-lg flex flex-col md:flex-row gap-lg items-start">
+<!-- Icon & Status Text -->
+<div class="flex-1">
+<div class="flex items-center gap-md mb-md">
+<div class="w-12 h-12 rounded-full bg-status-review/10 flex items-center justify-center text-status-review">
+<span class="material-symbols-outlined text-[28px] icon-fill" data-icon="warning">warning</span>
+</div>
+<div>
+<h3 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">REVIEW REQUIRED</h3>
+<p class="font-body-md text-body-md text-text-muted mt-1">Some information could not be confidently verified.</p>
+</div>
+</div>
+<!-- Flagged Issues List -->
+<div class="mt-lg space-y-md">
+<h4 class="font-label-md text-label-md text-text-muted uppercase tracking-wider">Flagged Items</h4>
+<div class="bg-background rounded-lg border border-border-subtle p-md hover:bg-surface-container-low transition-colors">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-status-review" data-icon="error">error</span>
+<span class="font-body-md text-body-md text-on-surface font-medium">Expiry Date</span>
+</div>
+<!-- Confidence Badge -->
+<span class="inline-flex items-center px-2 py-1 rounded bg-status-fail/10 text-status-fail font-label-sm text-label-sm">
+                                                Low Confidence
+                                            </span>
+</div>
+<p class="font-body-md text-body-md text-text-muted mt-1 ml-8">Partially unreadable due to glare.</p>
+<div class="mt-2 ml-8 text-sm">
+<span class="text-text-muted">Extracted:</span> <span class="line-through text-status-fail">12/202?</span>
+</div>
+</div>
+<div class="bg-background rounded-lg border border-border-subtle p-md hover:bg-surface-container-low transition-colors">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-status-review" data-icon="error">error</span>
+<span class="font-body-md text-body-md text-on-surface font-medium">Origin</span>
+</div>
+<!-- Confidence Badge -->
+<span class="inline-flex items-center px-2 py-1 rounded bg-status-review/10 text-status-review font-label-sm text-label-sm">
+                                                61% Confidence
+                                            </span>
+</div>
+<p class="font-body-md text-body-md text-text-muted mt-1 ml-8">Text is blurred near edge.</p>
+<div class="mt-2 ml-8 text-sm">
+<span class="text-text-muted">Extracted:</span> <span class="text-status-review">Made in IND...</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Overall Score Ring -->
+<div class="md:w-48 flex flex-col items-center justify-center p-md bg-surface rounded-lg border border-border-subtle self-stretch">
+<div class="relative w-32 h-32 flex items-center justify-center mb-md">
+<svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+<!-- Background Ring -->
+<path class="text-surface-container-highest" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4"></path>
+<!-- Progress Ring -->
+<path class="text-status-review progress-ring" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="68, 100" stroke-width="4"></path>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-headline-xl text-headline-xl text-status-review">68</span>
+<span class="font-label-sm text-label-sm text-text-muted uppercase">/ 100</span>
+</div>
+</div>
+<div class="text-center">
+<p class="font-label-md text-label-md text-status-review font-bold">Needs Attention</p>
+</div>
+</div>
+</div>
+<!-- Actions Footer -->
+<div class="bg-surface p-lg border-t border-border-subtle flex flex-col sm:flex-row gap-md justify-end">
+<button class="px-md py-sm rounded-DEFAULT border border-border-subtle bg-surface-container-lowest text-primary-container font-label-md text-label-md hover:bg-surface-container-low transition-colors flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="photo_camera">photo_camera</span>
+                                Retake Image
+                            </button>
+<button class="px-md py-sm rounded-DEFAULT border border-border-subtle bg-surface-container-lowest text-primary-container font-label-md text-label-md hover:bg-surface-container-low transition-colors flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit_note">edit_note</span>
+                                Manual Verification
+                            </button>
+<button class="px-md py-sm rounded-DEFAULT bg-primary-container text-on-primary font-label-md text-label-md hover:opacity-90 transition-opacity flex items-center justify-center gap-xs">
+                                Review Extracted Info
+                                <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Right Column details - Spans 4 cols -->
+<div class="md:col-span-4 flex flex-col gap-lg">
+<!-- Scanned Image Thumbnail -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-md shadow-[0px_4px_12px_rgba(0,0,0,0.02)]">
+<h4 class="font-label-md text-label-md text-text-muted uppercase tracking-wider mb-sm">Source Image</h4>
+<div class="aspect-[4/3] rounded-lg overflow-hidden bg-surface relative group border border-border-subtle">
+<!-- Placeholder for scanned document image, styled to look like an imperfect scan -->
+<div class="w-full h-full bg-cover bg-center mix-blend-multiply opacity-90" data-alt="A macro photograph of a partially faded product label on a textured cardboard surface. The label has a barcode and dense regulatory text. The lighting is slightly uneven, mimicking a quick smartphone scan in a warehouse environment, creating a slight glare on one side that obscures text. The overall color palette is muted, industrial, and utilitarian." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBEeOhpKSTjjCCbvuzc0KS41rgZrmUW7tCUZeqcUN5oAxtJu0Mtkkpe7mM7p73UhSsvcYBoz6fe7smvhk-5fB-acCACA5rCFnhju4PBOEuPEFqL92IvoTuNmo_cmegdFtN7qmxckdE2epeSKtjZ1f-bpBkITJosFn7kb4jp7C2s_RjqxMiqLXGkwx1nKSvSiUqyvi0XiiVc3dVI_UyHW_uHfPPB_UgyKYTSp1b-3X8az_Su_MsfvpnqBA')"></div>
+<div class="absolute inset-0 bg-primary-container/0 group-hover:bg-primary-container/10 transition-colors flex items-center justify-center cursor-pointer">
+<span class="material-symbols-outlined text-transparent group-hover:text-primary-container drop-shadow-md text-[32px] transition-all" data-icon="zoom_in">zoom_in</span>
+</div>
+</div>
+</div>
+<!-- Verified Items Summary -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-md shadow-[0px_4px_12px_rgba(0,0,0,0.02)] flex-1">
+<h4 class="font-label-md text-label-md text-text-muted uppercase tracking-wider mb-md">Successfully Verified</h4>
+<ul class="space-y-sm">
+<li class="flex items-center justify-between p-sm hover:bg-surface-container-low rounded transition-colors">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-status-pass text-[18px] icon-fill" data-icon="check_circle">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Brand Name</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-muted">100%</span>
+</li>
+<li class="flex items-center justify-between p-sm hover:bg-surface-container-low rounded transition-colors">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-status-pass text-[18px] icon-fill" data-icon="check_circle">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Net Weight</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-muted">98%</span>
+</li>
+<li class="flex items-center justify-between p-sm hover:bg-surface-container-low rounded transition-colors">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-status-pass text-[18px] icon-fill" data-icon="check_circle">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Ingredients List</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-muted">92%</span>
+</li>
+<li class="flex items-center justify-between p-sm hover:bg-surface-container-low rounded transition-colors">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-status-pass text-[18px] icon-fill" data-icon="check_circle">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">FSSAI License No.</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-muted">95%</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+
+
+</body></html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Disha Pro - Compliance Rules</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#54647a",
+                        "text-muted": "#475569",
+                        "on-primary-container": "#90a8ff",
+                        "status-fail": "#ef4444",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#d0e1fb",
+                        "background": "#f7f9fb",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-tertiary-container": "#f39461",
+                        "on-background": "#191c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "border-subtle": "#e2e8f0",
+                        "status-pass": "#10b981",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "surface-dim": "#d8dadc",
+                        "outline-variant": "#c5c5d3",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-bright": "#f7f9fb",
+                        "primary-fixed": "#dce1ff",
+                        "status-review": "#f59e0b",
+                        "secondary-fixed": "#d3e4fe",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#773205",
+                        "tertiary": "#4b1c00",
+                        "outline": "#757682",
+                        "tertiary-container": "#6e2c00",
+                        "on-tertiary-fixed": "#341100",
+                        "on-primary-fixed": "#00164e",
+                        "surface-container-low": "#f2f4f6",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-variant": "#e0e3e5",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-container": "#eceef0",
+                        "secondary": "#505f76",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "inverse-surface": "#2d3133",
+                        "on-primary-fixed-variant": "#264191",
+                        "primary-container": "#1e3a8a",
+                        "primary": "#00236f",
+                        "surface-tint": "#4059aa",
+                        "surface": "#f7f9fb",
+                        "text-main": "#0f172a",
+                        "on-surface-variant": "#444651",
+                        "on-surface": "#191c1e",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#ffb691",
+                        "tertiary-fixed": "#ffdbcb",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#b6c4ff",
+                        "surface-container-high": "#e6e8ea",
+                        "on-secondary-fixed-variant": "#38485d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "24px",
+                        "base": "4px",
+                        "xs": "4px",
+                        "margin-mobile": "16px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "margin-desktop": "48px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-xl": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-text-main antialiased selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- Top Navigation (Desktop) -->
+<nav class="hidden md:flex justify-between items-center w-full px-gutter max-w-[1280px] mx-auto h-16 bg-surface border-b border-border-subtle docked full-width top-0 z-50">
+<div class="flex items-center gap-md">
+<img alt="Disha" class="w-8 h-8 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQudrChEkG7-zEnIycCgXHjQ2whWNKDXKeF5t9qlPMzZ8fP0WdK1Q2609YZLsfEOT0NcqtkgFSXUimigjo4u-unmWmQ9vX4f2E_VfbInkAxl1KAGX_79Rq7g4suH1dp2HlDLPxaO1LPVudevP3q46NyolnHBYUBM5whjTLSgA_MmMhdZ2LI_-cMDy17k0AJU6ZMSChk4t9AzwtKkpD7tTgjRWmMzJ5KPvvUiEvxL0FaPEV46OQdGGSAQ">
+<span class="font-headline-md text-headline-md font-bold text-primary">Disha</span>
+</div>
+<div class="flex gap-lg">
+<a class="text-text-muted hover:text-primary transition-colors cursor-pointer active:opacity-80 font-body-md text-body-md flex items-center h-16 px-sm border-b-2 border-transparent" href="#">Dashboard</a>
+<a class="text-text-muted hover:text-primary transition-colors cursor-pointer active:opacity-80 font-body-md text-body-md flex items-center h-16 px-sm border-b-2 border-transparent" href="#">Scan</a>
+<a class="text-text-muted hover:text-primary transition-colors cursor-pointer active:opacity-80 font-body-md text-body-md flex items-center h-16 px-sm border-b-2 border-transparent" href="#">History</a>
+<a class="text-primary border-b-2 border-primary pb-1 font-body-md text-body-md flex items-center h-16 px-sm" href="#">Rules</a>
+</div>
+<div class="flex items-center gap-md">
+<button aria-label="Search" class="text-text-muted hover:text-primary transition-colors cursor-pointer p-2 rounded-full hover:bg-surface-container-low" data-icon="search">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">search</span>
+</button>
+<button aria-label="Notifications" class="text-text-muted hover:text-primary transition-colors cursor-pointer p-2 rounded-full hover:bg-surface-container-low" data-icon="notifications">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-border-subtle overflow-hidden flex-shrink-0 cursor-pointer">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a government inspector, late 30s, wearing glasses and a neat button-down shirt. The lighting is clean and bright, typical of a modern office environment. The mood is serious and focused, appropriate for a compliance and verification setting. Colors are muted blues and grays." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAh0gG-E6FxXlNPOfsVRqPECLcFpDRpgTHaKvAiJuBO2a5RJgCYX_lyRcgOG1qZ1RctyE0rQWQWjSA3SUb-tZVkdDA9JW3J9tavRwBMlCqGVAYyhLG-Aa6cG5BGKRGG92tTVNuH6EOssTCGgU8j2T2Sc5DB8RRg5SD-ZVZ4pZxXSCW9ygr12RIqjY4651-zWziqugnQ88-dBiU7_o5Rp2QyNGLda-TVWsiexd0meAtQK0IwCEVDghxfGA">
+</div>
+</div>
+</nav>
+<!-- Side Navigation (Desktop - Optional structure per style guide, usually mutually exclusive with top nav for complex apps, but keeping top nav as primary here for consistency with prompt focus. Omitting side nav to focus on canvas.) -->
+<!-- Main Content Canvas -->
+<main class="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-lg md:py-xl">
+<header class="mb-xl flex flex-col md:flex-row md:justify-between md:items-end gap-md">
+<div>
+<h1 class="font-headline-xl text-headline-xl text-text-main mb-xs">Compliance Rules</h1>
+<p class="font-body-lg text-body-lg text-text-muted">Master library of national verification standards.</p>
+</div>
+<div class="flex items-center gap-sm bg-surface-container-lowest border border-border-subtle rounded-lg px-md py-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition-all">
+<span class="material-symbols-outlined text-text-muted" style="font-variation-settings: 'FILL' 0;">search</span>
+<input class="border-none bg-transparent outline-none font-body-md text-body-md text-text-main placeholder:text-text-muted w-full md:w-64" placeholder="Search rules..." type="text">
+</div>
+</header>
+<!-- Rule Categories (Bento-style layout) -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg">
+<!-- Category Navigation / Filter -->
+<div class="md:col-span-3 flex flex-row md:flex-col gap-sm overflow-x-auto pb-4 md:pb-0 scrollbar-hide border-b md:border-b-0 md:border-r border-border-subtle md:pr-md">
+<button class="flex-shrink-0 text-left px-md py-sm rounded-lg bg-secondary-container text-on-secondary-container font-label-md text-label-md transition-colors flex items-center justify-between group">
+<span class="">MRP Verification</span>
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 0;">chevron_right</span>
+</button>
+<button class="flex-shrink-0 text-left px-md py-sm rounded-lg text-text-muted hover:bg-surface-container-high font-label-md text-label-md transition-colors flex items-center justify-between group">
+<span class="">Origin &amp; Manufacture</span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity" style="font-variation-settings: 'FILL' 0;">chevron_right</span>
+</button>
+<button class="flex-shrink-0 text-left px-md py-sm rounded-lg text-text-muted hover:bg-surface-container-high font-label-md text-label-md transition-colors flex items-center justify-between group">
+<span class="">Net Quantity</span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity" style="font-variation-settings: 'FILL' 0;">chevron_right</span>
+</button>
+<button class="flex-shrink-0 text-left px-md py-sm rounded-lg text-text-muted hover:bg-surface-container-high font-label-md text-label-md transition-colors flex items-center justify-between group">
+<span class="">Date Formats</span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity" style="font-variation-settings: 'FILL' 0;">chevron_right</span>
+</button>
+<button class="flex-shrink-0 text-left px-md py-sm rounded-lg text-text-muted hover:bg-surface-container-high font-label-md text-label-md transition-colors flex items-center justify-between group">
+<span class="">Ingredients &amp; Allergens</span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity" style="font-variation-settings: 'FILL' 0;">chevron_right</span>
+</button>
+</div>
+<!-- Rule Cards Grid -->
+<div class="md:col-span-9 grid grid-cols-1 lg:grid-cols-2 gap-md">
+<!-- Rule Card 1 -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-md hover:border-outline-variant transition-colors group flex flex-col h-full">
+<div class="flex justify-between items-start mb-md">
+<span class="inline-flex items-center gap-xs px-2 py-1 rounded-full bg-surface-container-low text-text-muted font-label-sm text-label-sm border border-border-subtle">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 0;">tag</span>
+                            RULE-MRP-001
+                        </span>
+<span class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors cursor-pointer" style="font-variation-settings: 'FILL' 0;">open_in_new</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-text-main mb-sm">Maximum Retail Price (MRP) Declaration</h3>
+<div class="flex-grow space-y-md mt-sm">
+<div>
+<h4 class="font-label-md text-label-md text-text-muted uppercase tracking-wider mb-xs">Requirement</h4>
+<p class="font-body-md text-body-md text-text-main">MRP must be clearly printed inclusive of all taxes. It cannot be obscured by stickers or additional text.</p>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-text-muted uppercase tracking-wider mb-xs">Why it matters</h4>
+<p class="font-body-md text-body-md text-text-main">Ensures consumer protection against overcharging and maintains market transparency per national metrology acts.</p>
+</div>
+<div class="bg-surface p-sm rounded-lg border border-border-subtle">
+<h4 class="font-label-md text-label-md text-text-muted uppercase tracking-wider mb-xs flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 0;">rule</span>
+                                Verification Method
+                            </h4>
+<p class="font-body-md text-body-md text-text-main">OCR extraction specifically looking for "MRP", "Rs.", "₹" followed by numeric values. Confidence threshold: &gt; 95%.</p>
+</div>
+</div>
+</div>
+<!-- Rule Card 2 -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-md hover:border-outline-variant transition-colors group flex flex-col h-full">
+<div class="flex justify-between items-start mb-md">
+<span class="inline-flex items-center gap-xs px-2 py-1 rounded-full bg-surface-container-low text-text-muted font-label-sm text-label-sm border border-border-subtle">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 0;">tag</span>
+                            RULE-MRP-002
+                        </span>
+<span class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors cursor-pointer" style="font-variation-settings: 'FILL' 0;">open_in_new</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-text-main mb-sm">Dual MRP Prohibition</h3>
+<div class="flex-grow space-y-md mt-sm">
+<div>
+<h4 class="font-label-md text-label-md text-text-muted uppercase tracking-wider mb-xs">Requirement</h4>
+<p class="font-body-md text-body-md text-text-main">Multiple MRPs for the same product based on location or channel are strictly prohibited.</p>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-text-muted uppercase tracking-wider mb-xs">Why it matters</h4>
+<p class="font-body-md text-body-md text-text-main">Prevents discriminatory pricing practices and ensures standard valuation across jurisdictions.</p>
+</div>
+<div class="bg-surface p-sm rounded-lg border border-border-subtle">
+<h4 class="font-label-md text-label-md text-text-muted uppercase tracking-wider mb-xs flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 0;">rule</span>
+                                Verification Method
+                            </h4>
+<p class="font-body-md text-body-md text-text-main">Cross-reference extracted MRP value against national product database via barcode correlation.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

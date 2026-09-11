@@ -1,0 +1,291 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LabelCheck - Product Label Compliance Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#54647a",
+                        "text-muted": "#475569",
+                        "on-primary-container": "#90a8ff",
+                        "status-fail": "#ef4444",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#d0e1fb",
+                        "background": "#f7f9fb",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-tertiary-container": "#f39461",
+                        "on-background": "#191c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "border-subtle": "#e2e8f0",
+                        "status-pass": "#10b981",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "surface-dim": "#d8dadc",
+                        "outline-variant": "#c5c5d3",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-bright": "#f7f9fb",
+                        "primary-fixed": "#dce1ff",
+                        "status-review": "#f59e0b",
+                        "secondary-fixed": "#d3e4fe",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#773205",
+                        "tertiary": "#4b1c00",
+                        "outline": "#757682",
+                        "tertiary-container": "#6e2c00",
+                        "on-tertiary-fixed": "#341100",
+                        "on-primary-fixed": "#00164e",
+                        "surface-container-low": "#f2f4f6",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-variant": "#e0e3e5",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-container": "#eceef0",
+                        "secondary": "#505f76",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "inverse-surface": "#2d3133",
+                        "on-primary-fixed-variant": "#264191",
+                        "primary-container": "#1e3a8a",
+                        "primary": "#00236f",
+                        "surface-tint": "#4059aa",
+                        "surface": "#f7f9fb",
+                        "text-main": "#0f172a",
+                        "on-surface-variant": "#444651",
+                        "on-surface": "#191c1e",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#ffb691",
+                        "tertiary-fixed": "#ffdbcb",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#b6c4ff",
+                        "surface-container-high": "#e6e8ea",
+                        "on-secondary-fixed-variant": "#38485d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "24px",
+                        "base": "4px",
+                        "xs": "4px",
+                        "margin-mobile": "16px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "margin-desktop": "48px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-xl": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-text-main font-body-md h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low border-r border-border-subtle flex flex-col py-lg px-md z-10">
+<div class="flex items-center gap-sm mb-lg px-2">
+<img alt="Organization Logo" class="w-8 h-8 rounded-lg object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1W9toxfJaFv6RYO-OlrJM-Xl8MiGQtKEyaAePSoNRwhwjLX5S2hXpWBYCCZ6qaF6-D9-22KTP8mjaNZJoiy4575cF9K7cQk0sQtsvBAXiCNpk7mRmGNB-Oqzl_jbWMU3jaWDMYUb8SlhHQ3vbYSgFlRUoflUpBKPyd2DnN8pehJv1cfdQ5_-NBud96Xpalm2xKrhWpj0s_bhVnjEBg4SPugt7fYFK_BbX5TaM8c4C_2hyjtDnNVDNir3cR6">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary">Disha</h1>
+<p class="font-label-md text-label-md text-text-muted">Government Portal</p>
+</div>
+</div>
+<ul class="flex flex-col gap-sm flex-1">
+<li>
+<a class="flex items-center gap-sm px-md py-sm bg-secondary-container text-on-secondary-container font-semibold rounded-lg transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-body-md text-body-md">Overview</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-sm px-md py-sm text-secondary hover:bg-surface-container-highest rounded-lg transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">document_scanner</span>
+<span class="font-body-md text-body-md">Live Scan</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-sm px-md py-sm text-secondary hover:bg-surface-container-highest rounded-lg transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">history</span>
+<span class="font-body-md text-body-md">Audit Logs</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-sm px-md py-sm text-secondary hover:bg-surface-container-highest rounded-lg transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Main Content -->
+<main class="ml-64 flex-1 flex flex-col h-screen overflow-y-auto bg-background">
+<!-- TopNavBar (for desktop layout consistency, though SideNav is primary here) -->
+<header class="bg-surface border-b border-border-subtle flex justify-between items-center w-full px-gutter max-w-[1280px] mx-auto h-16 sticky top-0 z-10">
+<div class="flex items-center gap-lg">
+<!-- Branding hidden on desktop if SideNav is present, but kept for structural reference -->
+</div>
+<div class="flex items-center gap-md">
+<button class="text-primary cursor-pointer active:opacity-80 p-2 rounded-full hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<img alt="Inspector Profile" class="w-8 h-8 rounded-full border border-border-subtle object-cover" data-alt="A small circular profile picture of a professional government inspector in uniform, clean lighting, formal corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8P95fs7dzliAzsFIBTD74sfSIwOPP2CRclAqiXzwPBRy0YcnaaFG2sV8YNNzUX6-RhOVhUuW_uNiQhSfVIn9J9q7zcXY5pS0OLEZM_SxElH49E4hVUQzIXP-xvf0Mma1vHmBOOI8hcCepm6wx6WG-096N5X3jf98Ja6ltW12gzUZeRaiDuDBkWYdw5-tQr7BReIp4J1SDOz0xtfGp9Yhcx1NDpLylVGW-XMQvDtcilBMnvVgdgHTk9w">
+</div>
+</header>
+<div class="px-margin-desktop py-lg max-w-[1280px] mx-auto w-full flex-1">
+<!-- Header Section -->
+<div class="flex justify-between items-end mb-xl">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-primary font-bold mb-xs">Product Label Compliance Dashboard</h2>
+<p class="font-body-lg text-body-lg text-text-muted max-w-2xl">Verify product labels against applicable regulatory requirements in seconds.</p>
+</div>
+<div class="flex gap-md">
+<button class="bg-white border border-border-subtle text-primary-container px-md py-sm rounded-lg font-body-md text-body-md hover:bg-surface-container-low transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.05)] flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">upload_file</span>
+                        Upload Label Image
+                    </button>
+<button class="bg-primary-container text-on-primary px-md py-sm rounded-lg font-body-md text-body-md hover:bg-primary transition-colors flex items-center gap-xs shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        Scan New Product
+                    </button>
+</div>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-5 gap-md mb-xl">
+<div class="bg-surface-container-lowest border border-border-subtle rounded-lg p-md">
+<p class="font-label-md text-label-md text-text-muted mb-xs uppercase tracking-wider">Products Checked</p>
+<p class="font-headline-lg text-headline-lg text-text-main font-semibold">1,248</p>
+</div>
+<div class="bg-surface-container-lowest border border-border-subtle rounded-lg p-md">
+<p class="font-label-md text-label-md text-text-muted mb-xs uppercase tracking-wider">Passed</p>
+<p class="font-headline-lg text-headline-lg text-status-pass font-semibold">892</p>
+</div>
+<div class="bg-surface-container-lowest border border-border-subtle rounded-lg p-md">
+<p class="font-label-md text-label-md text-text-muted mb-xs uppercase tracking-wider">Failed</p>
+<p class="font-headline-lg text-headline-lg text-status-fail font-semibold">156</p>
+</div>
+<div class="bg-surface-container-lowest border border-border-subtle rounded-lg p-md">
+<p class="font-label-md text-label-md text-text-muted mb-xs uppercase tracking-wider">Review Required</p>
+<p class="font-headline-lg text-headline-lg text-status-review font-semibold">200</p>
+</div>
+<div class="bg-surface-container-lowest border border-border-subtle rounded-lg p-md flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md text-text-muted mb-xs uppercase tracking-wider">Avg Score</p>
+<p class="font-headline-lg text-headline-lg text-primary-container font-semibold">88%</p>
+</div>
+<div class="w-12 h-12 rounded-full border-4 border-status-pass flex items-center justify-center">
+<span class="font-label-md text-label-md text-text-main">88</span>
+</div>
+</div>
+</div>
+<!-- Recent Inspections Table -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-lg overflow-hidden">
+<div class="p-md border-b border-border-subtle bg-surface flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md text-text-main">Recent Inspections</h3>
+<button class="text-primary font-label-md text-label-md hover:underline flex items-center gap-xs">
+                        View All <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-border-subtle">
+<th class="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase">Product</th>
+<th class="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase">Manufacturer</th>
+<th class="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase">Origin</th>
+<th class="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase">MRP</th>
+<th class="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase">Date</th>
+<th class="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase">Score</th>
+<th class="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase">Status</th>
+<th class="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-subtle">
+<tr class="hover:bg-surface-container-low transition-colors h-[48px]">
+<td class="py-sm px-md font-body-md text-body-md text-text-main font-medium">Premium Basmati Rice</td>
+<td class="py-sm px-md font-body-md text-body-md text-text-muted">Sample Foods</td>
+<td class="py-sm px-md font-body-md text-body-md text-text-muted">India</td>
+<td class="py-sm px-md font-body-md text-body-md text-text-muted">₹249</td>
+<td class="py-sm px-md font-body-md text-body-md text-text-muted">Oct 24, 2023</td>
+<td class="py-sm px-md font-body-md text-body-md font-semibold text-text-main">92</td>
+<td class="py-sm px-md">
+<span class="inline-flex items-center gap-xs px-2 py-1 rounded-full bg-status-pass/10 text-status-pass font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> PASS
+                                    </span>
+</td>
+<td class="py-sm px-md text-right">
+<button class="text-text-muted hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors h-[48px]">
+<td class="py-sm px-md font-body-md text-body-md text-text-main font-medium">Organic Honey 500g</td>
+<td class="py-sm px-md font-body-md text-body-md text-text-muted">Nature's Best</td>
+<td class="py-sm px-md font-body-md text-body-md text-text-muted">India</td>
+<td class="py-sm px-md font-body-md text-body-md text-text-muted">₹399</td>
+<td class="py-sm px-md font-body-md text-body-md text-text-muted">Oct 24, 2023</td>
+<td class="py-sm px-md font-body-md text-body-md font-semibold text-text-main">45</td>
+<td class="py-sm px-md">
+<span class="inline-flex items-center gap-xs px-2 py-1 rounded-full bg-status-fail/10 text-status-fail font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">error</span> FAIL
+                                    </span>
+</td>
+<td class="py-sm px-md text-right">
+<button class="text-text-muted hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors h-[48px]">
+<td class="py-sm px-md font-body-md text-body-md text-text-main font-medium">Almond Milk 1L</td>
+<td class="py-sm px-md font-body-md text-body-md text-text-muted">NutriDairy</td>
+<td class="py-sm px-md font-body-md text-body-md text-text-muted">India</td>
+<td class="py-sm px-md font-body-md text-body-md text-text-muted">₹180</td>
+<td class="py-sm px-md font-body-md text-body-md text-text-muted">Oct 23, 2023</td>
+<td class="py-sm px-md font-body-md text-body-md font-semibold text-text-main">75</td>
+<td class="py-sm px-md">
+<span class="inline-flex items-center gap-xs px-2 py-1 rounded-full bg-status-review/10 text-status-review font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">warning</span> REVIEW
+                                    </span>
+</td>
+<td class="py-sm px-md text-right">
+<button class="text-text-muted hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</body></html>

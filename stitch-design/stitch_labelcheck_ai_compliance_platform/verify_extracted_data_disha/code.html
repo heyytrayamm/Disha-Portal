@@ -1,0 +1,347 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LabelCheck Pro - Extracted Information</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-container": "#54647a",
+                      "text-muted": "#475569",
+                      "on-primary-container": "#90a8ff",
+                      "status-fail": "#ef4444",
+                      "on-primary": "#ffffff",
+                      "secondary-container": "#d0e1fb",
+                      "background": "#f7f9fb",
+                      "on-secondary": "#ffffff",
+                      "inverse-on-surface": "#eff1f3",
+                      "on-tertiary-container": "#f39461",
+                      "on-background": "#191c1e",
+                      "surface-container-lowest": "#ffffff",
+                      "border-subtle": "#e2e8f0",
+                      "status-pass": "#10b981",
+                      "primary-fixed-dim": "#b6c4ff",
+                      "surface-dim": "#d8dadc",
+                      "outline-variant": "#c5c5d3",
+                      "on-secondary-fixed": "#0b1c30",
+                      "surface-bright": "#f7f9fb",
+                      "primary-fixed": "#dce1ff",
+                      "status-review": "#f59e0b",
+                      "secondary-fixed": "#d3e4fe",
+                      "error-container": "#ffdad6",
+                      "on-tertiary-fixed-variant": "#773205",
+                      "tertiary": "#4b1c00",
+                      "outline": "#757682",
+                      "tertiary-container": "#6e2c00",
+                      "on-tertiary-fixed": "#341100",
+                      "on-primary-fixed": "#00164e",
+                      "surface-container-low": "#f2f4f6",
+                      "on-tertiary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "surface-variant": "#e0e3e5",
+                      "surface-container-highest": "#e0e3e5",
+                      "surface-container": "#eceef0",
+                      "secondary": "#505f76",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "inverse-surface": "#2d3133",
+                      "on-primary-fixed-variant": "#264191",
+                      "primary-container": "#1e3a8a",
+                      "primary": "#00236f",
+                      "surface-tint": "#4059aa",
+                      "surface": "#f7f9fb",
+                      "text-main": "#0f172a",
+                      "on-surface-variant": "#444651",
+                      "on-surface": "#191c1e",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed-dim": "#ffb691",
+                      "tertiary-fixed": "#ffdbcb",
+                      "on-error": "#ffffff",
+                      "inverse-primary": "#b6c4ff",
+                      "surface-container-high": "#e6e8ea",
+                      "on-secondary-fixed-variant": "#38485d"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "lg": "24px",
+                      "xl": "32px",
+                      "gutter": "24px",
+                      "base": "4px",
+                      "xs": "4px",
+                      "margin-mobile": "16px",
+                      "md": "16px",
+                      "sm": "8px",
+                      "margin-desktop": "48px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-xl": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-xl": [
+                              "36px",
+                              {
+                                      "lineHeight": "44px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .ocr-highlight {
+            position: absolute;
+            border: 2px solid theme('colors.primary-container');
+            background-color: theme('colors.primary-fixed-dim');
+            opacity: 0.3;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .ocr-highlight:hover {
+            opacity: 0.6;
+            border-color: theme('colors.primary');
+        }
+    </style>
+</head>
+<body class="bg-background text-text-main font-body-md min-h-screen flex">
+<!-- Side Nav -->
+<nav class="h-screen w-64 fixed left-0 top-0 border-r border-border-subtle bg-surface-container-low flex flex-col py-lg px-md z-10 hidden md:flex transition-all duration-200 ease-in-out">
+<div class="flex items-center space-x-3 mb-xl">
+<img alt="Organization Logo" class="h-8 w-8 rounded-lg object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1W9toxfJaFv6RYO-OlrJM-Xl8MiGQtKEyaAePSoNRwhwjLX5S2hXpWBYCCZ6qaF6-D9-22KTP8mjaNZJoiy4575cF9K7cQk0sQtsvBAXiCNpk7mRmGNB-Oqzl_jbWMU3jaWDMYUb8SlhHQ3vbYSgFlRUoflUpBKPyd2DnN8pehJv1cfdQ5_-NBud96Xpalm2xKrhWpj0s_bhVnjEBg4SPugt7fYFK_BbX5TaM8c4C_2hyjtDnNVDNir3cR6">
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Disha</h1>
+
+</div>
+</div>
+<div class="flex-1 space-y-sm">
+<a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-secondary hover:bg-surface-container-high transition-colors font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-weight="regular">dashboard</span>
+<span class="">Overview</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-secondary-container text-on-secondary-container font-semibold transition-colors font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">document_scanner</span>
+<span class="">Live Scan</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-secondary hover:bg-surface-container-high transition-colors font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-weight="regular">history</span>
+<span class="">Audit Logs</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 rounded-lg text-secondary hover:bg-surface-container-high transition-colors font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-weight="regular">settings</span>
+<span class="">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-1 md:ml-64 p-gutter max-w-[1280px] mx-auto min-h-screen flex flex-col">
+<!-- Top App Bar (Mobile) -->
+<header class="md:hidden flex justify-between items-center mb-lg border-b border-border-subtle pb-4">
+<div class="flex items-center space-x-2">
+<img alt="Organization Logo" class="h-6 w-6 rounded-lg object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1W9toxfJaFv6RYO-OlrJM-Xl8MiGQtKEyaAePSoNRwhwjLX5S2hXpWBYCCZ6qaF6-D9-22KTP8mjaNZJoiy4575cF9K7cQk0sQtsvBAXiCNpk7mRmGNB-Oqzl_jbWMU3jaWDMYUb8SlhHQ3vbYSgFlRUoflUpBKPyd2DnN8pehJv1cfdQ5_-NBud96Xpalm2xKrhWpj0s_bhVnjEBg4SPugt7fYFK_BbX5TaM8c4C_2hyjtDnNVDNir3cR6">
+<span class="font-headline-md text-headline-md font-bold text-primary">Disha</span>
+</div>
+<button class="text-secondary"><span class="material-symbols-outlined">menu</span></button>
+</header>
+<div class="mb-lg">
+<h2 class="font-headline-lg text-headline-lg md:text-headline-xl md:font-headline-xl text-primary font-bold mb-2">Live Scan Results</h2>
+<p class="font-body-md text-body-md text-text-muted">Extracted information from 'Premium Basmati Rice' label.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg flex-1 h-full">
+<!-- Left Column: Image Area -->
+<section class="lg:col-span-5 bg-surface-container-lowest border border-border-subtle rounded-lg p-md flex flex-col h-full relative">
+<div class="flex justify-between items-center mb-sm">
+<h3 class="font-headline-md text-headline-md font-semibold text-primary">Source Image</h3>
+<span class="material-symbols-outlined text-text-muted text-sm cursor-pointer hover:text-primary">zoom_in</span>
+</div>
+<div class="flex-1 relative bg-surface-container-low rounded border border-border-subtle overflow-hidden flex items-center justify-center min-h-[400px]">
+<!-- Image Placeholder with mock OCR boxes -->
+<div class="w-full h-full bg-cover bg-center absolute inset-0 opacity-80" data-alt="A high-resolution, sharply focused macro photograph of a Premium Basmati Rice product label. The packaging is a rich, deep blue (#1e3a8a) with clear, crisp white typography detailing 'Product Name', 'Manufacturer', 'Origin', 'MRP', 'Mfg Date', 'Expiry', and 'Net Qty (5kg)'. The lighting is bright, even, and clinical, typical of a professional document scanning environment, highlighting the government-grade precision required for OCR extraction. The scene is immaculate and highly detailed." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuANOy-35H-qEeHvOo0nzm2lN6VbL3dpnnnbChJkQCOP1pjq-Xgm7Gizf9ncEy5HU84MjEbNcgtjed8GErXSSxBgo_f8vv7b-_nPSM-y89G6q-eDDiLWXYZSv9muPg_myB3JEDO0WLt32O1ddccaeQ8R-uawL2uQllEXWvcssaUOaKU92fLqauFIeDiTrLUqF6NWQDczhTBGzD_syEdADYT0mTa8xpitsR_iolGfkFtQVRq6GLYbwCguRg')"></div>
+<!-- Simulated OCR Bounding Boxes (Absolute positioning based on image coordinates) -->
+<div class="ocr-highlight" style="top: 20%; left: 15%; width: 60%; height: 8%;" title="Product Name: Premium Basmati Rice"></div>
+<div class="ocr-highlight" style="top: 35%; left: 15%; width: 40%; height: 5%;" title="Manufacturer: India Rice Corp"></div>
+<div class="ocr-highlight" style="top: 45%; left: 15%; width: 25%; height: 5%;" title="Origin: India"></div>
+<div class="ocr-highlight" style="top: 55%; left: 15%; width: 20%; height: 5%;" title="MRP: ₹249"></div>
+<div class="ocr-highlight" style="top: 65%; left: 15%; width: 30%; height: 5%;" title="Net Qty: 5kg"></div>
+</div>
+<p class="text-label-sm font-label-sm text-text-muted mt-2 text-center">Click highlighted areas to map fields.</p>
+</section>
+<!-- Right Column: Extracted Fields -->
+<section class="lg:col-span-7 bg-surface-container-lowest border border-border-subtle rounded-lg p-md flex flex-col h-full">
+<div class="flex justify-between items-center mb-md">
+<h3 class="font-headline-md text-headline-md font-semibold text-primary">Extracted Data</h3>
+<span class="px-2 py-1 bg-surface-container text-text-muted rounded-full font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span> Auto-detected
+                     </span>
+</div>
+<div class="space-y-3 overflow-y-auto flex-1 pr-2">
+<!-- Field 1 -->
+<div class="p-3 border border-border-subtle rounded bg-white hover:bg-surface-bright transition-colors">
+<label class="block font-label-md text-label-md text-text-muted mb-1 flex justify-between">
+                            Product Name
+                            <span class="text-status-pass font-medium flex items-center gap-1 bg-status-pass/10 px-1.5 rounded"><span class="material-symbols-outlined text-[12px]">check_circle</span>99%</span>
+</label>
+<input class="w-full font-body-md text-body-md text-text-main border-none p-0 focus:ring-0 bg-transparent" type="text" value="Premium Basmati Rice">
+</div>
+<!-- Field 2 -->
+<div class="p-3 border border-border-subtle rounded bg-white hover:bg-surface-bright transition-colors">
+<label class="block font-label-md text-label-md text-text-muted mb-1 flex justify-between">
+                            Manufacturer
+                            <span class="text-status-pass font-medium flex items-center gap-1 bg-status-pass/10 px-1.5 rounded"><span class="material-symbols-outlined text-[12px]">check_circle</span>95%</span>
+</label>
+<input class="w-full font-body-md text-body-md text-text-main border-none p-0 focus:ring-0 bg-transparent" type="text" value="AgriCorp India Ltd.">
+</div>
+<!-- Field 3 (Origin) -->
+<div class="p-3 border border-border-subtle rounded bg-white hover:bg-surface-bright transition-colors border-l-4 border-l-primary">
+<label class="block font-label-md text-label-md text-text-muted mb-1 flex justify-between">
+                            Origin
+                            <span class="text-status-pass font-medium flex items-center gap-1 bg-status-pass/10 px-1.5 rounded"><span class="material-symbols-outlined text-[12px]">check_circle</span>96%</span>
+</label>
+<input class="w-full font-body-md text-body-md text-text-main border-none p-0 focus:ring-0 bg-transparent" type="text" value="India">
+</div>
+<!-- Field 4 (MRP) -->
+<div class="p-3 border border-border-subtle rounded bg-white hover:bg-surface-bright transition-colors">
+<label class="block font-label-md text-label-md text-text-muted mb-1 flex justify-between">
+                            MRP
+                            <span class="text-status-pass font-medium flex items-center gap-1 bg-status-pass/10 px-1.5 rounded"><span class="material-symbols-outlined text-[12px]">check_circle</span>98%</span>
+</label>
+<input class="w-full font-body-md text-body-md text-text-main border-none p-0 focus:ring-0 bg-transparent" type="text" value="₹249.00">
+</div>
+<!-- Field 5 (Mfg Date) -->
+<div class="flex gap-3">
+<div class="flex-1 p-3 border border-border-subtle rounded bg-white hover:bg-surface-bright transition-colors">
+<label class="block font-label-md text-label-md text-text-muted mb-1 flex justify-between">
+                                Mfg Date
+                                <span class="text-status-review font-medium flex items-center gap-1 bg-status-review/10 px-1.5 rounded"><span class="material-symbols-outlined text-[12px]">warning</span>82%</span>
+</label>
+<input class="w-full font-body-md text-body-md text-text-main border-none p-0 focus:ring-0 bg-transparent" type="text" value="12/10/2023">
+</div>
+<div class="flex-1 p-3 border border-border-subtle rounded bg-white hover:bg-surface-bright transition-colors">
+<label class="block font-label-md text-label-md text-text-muted mb-1 flex justify-between">
+                                Expiry Date
+                                <span class="text-status-pass font-medium flex items-center gap-1 bg-status-pass/10 px-1.5 rounded"><span class="material-symbols-outlined text-[12px]">check_circle</span>94%</span>
+</label>
+<input class="w-full font-body-md text-body-md text-text-main border-none p-0 focus:ring-0 bg-transparent" type="text" value="11/10/2025">
+</div>
+</div>
+<!-- Field 6 (Net Qty) -->
+<div class="p-3 border border-border-subtle rounded bg-white hover:bg-surface-bright transition-colors">
+<label class="block font-label-md text-label-md text-text-muted mb-1 flex justify-between">
+                            Net Qty
+                            <span class="text-status-pass font-medium flex items-center gap-1 bg-status-pass/10 px-1.5 rounded"><span class="material-symbols-outlined text-[12px]">check_circle</span>97%</span>
+</label>
+<input class="w-full font-body-md text-body-md text-text-main border-none p-0 focus:ring-0 bg-transparent" type="text" value="5kg">
+</div>
+</div>
+<div class="mt-md pt-md border-t border-border-subtle flex justify-end space-x-3">
+<button class="px-4 py-2 border border-border-subtle text-primary bg-white rounded font-body-md font-medium hover:bg-surface-bright transition-colors">Re-scan</button>
+<button class="px-6 py-2 bg-primary-container text-white rounded font-body-md font-medium hover:bg-primary transition-colors flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">rule</span>
+                        Verify Against Rules
+                    </button>
+</div>
+</section>
+</div>
+</main>
+<script>
+        // Simple interaction for input focus halo
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.classList.add('border-primary', 'ring-2', 'ring-primary/15');
+                this.parentElement.classList.remove('border-border-subtle');
+            });
+            input.addEventListener('blur', function() {
+                this.parentElement.classList.remove('border-primary', 'ring-2', 'ring-primary/15');
+                this.parentElement.classList.add('border-border-subtle');
+            });
+        });
+    </script>
+
+
+</body></html>
