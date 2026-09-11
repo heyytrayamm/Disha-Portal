@@ -20,7 +20,7 @@ COPY --from=build /app/dist /usr/share/nginx/html
 ENV PORT=80
 EXPOSE 80
 
-RUN printf 'server {\n\
+RUN mkdir -p /etc/nginx/templates/ && printf 'server {\n\
     listen ${PORT};\n\
     server_name localhost;\n\
 \n\
