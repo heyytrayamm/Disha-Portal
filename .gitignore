@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Database
+*.db
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example

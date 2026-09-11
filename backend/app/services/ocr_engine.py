@@ -23,6 +23,7 @@ class OCREngine:
 
         # 1. Attempt initializing native PaddleOCR
         try:
+            # pyrefly: ignore [missing-import]
             from paddleocr import PaddleOCR
             self.paddle_ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
             logger.info("PaddleOCR engine initialized successfully.")
@@ -38,7 +39,7 @@ class OCREngine:
             except Exception as e:
                 logger.info(f"RapidOCR engine not available: {e}")
 
-        # 3. Configure PyTesseract fallback
+        # 3. Configure PyTesseract (optional secondary fallback)
         try:
             import pytesseract
 
@@ -58,12 +59,16 @@ class OCREngine:
 
             if tesseract_cmd:
                 pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
-
-            pytesseract.get_tesseract_version()
-            self.tesseract_available = True
-            logger.info(f"PyTesseract available at: {getattr(pytesseract.pytesseract, 'tesseract_cmd', 'PATH')}")
+                pytesseract.get_tesseract_version()
+                self.tesseract_available = True
+                logger.info(f"PyTesseract optional fallback available at: {tesseract_cmd}")
+            else:
+                self.tesseract_available = False
+                logger.info("PyTesseract binary not found on system. RapidOCR (PaddleOCR ONNX) is operating as the primary OCR engine.")
         except Exception as e:
-            logger.warning(f"PyTesseract not available: {e}")
+            self.tesseract_available = False
+            logger.info(f"PyTesseract optional fallback disabled ({e}). RapidOCR (PaddleOCR ONNX) handles all OCR extraction.")
+
 
     def extract_text_and_boxes(self, img: np.ndarray, file_name: str = "") -> List[Dict[str, Any]]:
         """
