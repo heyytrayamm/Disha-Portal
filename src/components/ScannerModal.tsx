@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { ScannedProduct } from '../types/metrology';
-import { generateInitialSampleProducts } from '../services/sampleDataService';
 import { ApiService } from '../services/api';
-import { getProductCanonicalStatus } from '../services/complianceStatusHelper';
 
 interface ScannerModalProps {
   isOpen: boolean;
@@ -34,7 +32,6 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const sampleProducts = generateInitialSampleProducts();
 
   // Stop camera when modal is closed or component unmounts
   useEffect(() => {
@@ -165,8 +162,8 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
         });
       }
 
-      if (!productResult) {
-        throw new Error("No compliance analysis result was received from the server.");
+      if (!productResult || typeof productResult !== 'object' || !(productResult.id || productResult.inspection_id) || !(productResult.overallStatus || productResult.status)) {
+        throw new Error("Invalid analysis response received from compliance server.");
       }
 
       // Preserve the CURRENT uploaded image reference for immediate and fallback rendering
@@ -524,51 +521,6 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
                         <span className="material-symbols-outlined text-[18px]">image</span>
                         Upload Image
                       </button>
-                    </div>
-                  </div>
-
-                  {/* Test Samples */}
-                  <div className="border-t border-border-subtle pt-md">
-                    <h4 className="font-label-md text-label-md text-text-muted uppercase tracking-wider mb-sm">
-                      Test Samples
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
-                      {sampleProducts.map((sample) => {
-                        const sampleStatus = getProductCanonicalStatus(sample);
-                        return (
-                          <div
-                            key={sample.id}
-                            onClick={() => {
-                              if (onSelectProduct) onSelectProduct(sample);
-                              onClose();
-                            }}
-                            className="p-sm rounded border border-border-subtle bg-surface-container-lowest hover:border-primary hover:bg-surface cursor-pointer transition-all flex items-start gap-sm group"
-                          >
-                            <img
-                              src={sample.imageUrl}
-                              alt={sample.productName}
-                              className="w-10 h-12 object-cover rounded border border-border-subtle shrink-0"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <span className="font-body-md text-body-md font-semibold text-text-main truncate group-hover:text-primary">
-                                  {sample.productName}
-                                </span>
-                                <span className={`px-2 py-0.5 rounded-full font-label-sm text-label-sm font-semibold shrink-0 ${
-                                  sampleStatus === 'PASS' 
-                                    ? 'bg-status-pass/10 text-status-pass' 
-                                    : sampleStatus === 'REVIEW'
-                                    ? 'bg-status-review/10 text-status-review'
-                                    : 'bg-status-fail/10 text-status-fail'
-                                }`}>
-                                  {sampleStatus}
-                                </span>
-                              </div>
-                              <p className="text-xs text-text-muted truncate mt-0.5">{sample.brandName} • {sample.category}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
                     </div>
                   </div>
                 </div>

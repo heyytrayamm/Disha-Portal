@@ -201,7 +201,10 @@ export class ApiService {
     }
 
     const data = await res.json();
-    const product: ScannedProduct = data.product;
+    const product: ScannedProduct = data?.product;
+    if (!product || typeof product !== 'object' || !(product.id || product.inspection_id) || !(product.overallStatus || product.status)) {
+      throw new Error("Invalid analysis response received from compliance server.");
+    }
     if (data.preprocessingStages) product.preprocessingStages = data.preprocessingStages;
     if (data.opencvMetadata) product.opencvMetadata = data.opencvMetadata;
     return this.normalizeProduct(product);
@@ -238,7 +241,10 @@ export class ApiService {
     }
 
     const data = await res.json();
-    const product: ScannedProduct = data.product;
+    const product: ScannedProduct = data?.product;
+    if (!product || typeof product !== 'object' || !(product.id || product.inspection_id) || !(product.overallStatus || product.status)) {
+      throw new Error("Invalid analysis response received from compliance server.");
+    }
     if (data.preprocessingStages) product.preprocessingStages = data.preprocessingStages;
     if (data.opencvMetadata) product.opencvMetadata = data.opencvMetadata;
     return this.normalizeProduct(product);

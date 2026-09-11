@@ -39,8 +39,9 @@ export function App() {
       if (inspectionId) {
         url.searchParams.set('id', inspectionId);
         localStorage.setItem('last_active_inspection_id', inspectionId);
-      } else if (tab !== 'scan') {
+      } else {
         url.searchParams.delete('id');
+        localStorage.removeItem('last_active_inspection_id');
       }
       window.history.pushState({}, '', url.toString());
     } catch {
@@ -58,7 +59,8 @@ export function App() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = (urlParams.get('tab') as ActiveTab) || 'dashboard';
-    const idParam = urlParams.get('id') || localStorage.getItem('last_active_inspection_id');
+    // Only load a specific inspection if explicitly provided in the URL query string
+    const idParam = urlParams.get('id');
 
     if (tabParam) {
       setActiveTab(tabParam);
@@ -106,8 +108,10 @@ export function App() {
           setActiveTab('scan');
           syncNavigation('scan', targetProduct.id);
         }
-      } else if (prods.length > 0) {
-        setSelectedProduct(prods[0]);
+      } else {
+        // Do NOT automatically select prods[0] for scan page
+        // Scan page shows clean empty state unless an inspection was explicitly chosen or scanned
+        setSelectedProduct(null);
       }
     } catch (e) {
       console.error("Error loading inspection records from database:", e);
@@ -204,7 +208,7 @@ export function App() {
 
         {activeTab === 'scan' && (
           <ScanAnalysisView
-            product={selectedProduct || products[0] || null}
+            product={selectedProduct}
             onOpenScanner={() => setIsScannerOpen(true)}
             onOpenNoticeModal={() => setIsNoticeModalOpen(true)}
             onDownloadPDF={handleDownloadPDF}
@@ -241,9 +245,19 @@ export function App() {
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         onSelectProduct={async (product) => {
-          setProducts(prev => [product, ...prev.filter(p => p.id !== product.id)]);
+          if (!product || !(product.id || product.inspection_id)) {
+            console.error("Invalid scan result returned to App:", product);
+            return;
+          }
+          const uniqueId = product.id || product.inspection_id;
+          // Clear previous selected product first
+          setSelectedProduct(null);
+          // Set selectedProduct to the NEW product
           setSelectedProduct(product);
-          syncNavigation('scan', product.id);
+          // Add/update that product in products by its unique ID
+          setProducts(prev => [product, ...prev.filter(p => p.id !== uniqueId && p.inspection_id !== uniqueId)]);
+          // Navigate to ?tab=scan&id=<NEW_ID>
+          syncNavigation('scan', uniqueId);
           setIsScannerOpen(false);
           try {
             const freshStats = await ApiService.fetchDashboardStats();

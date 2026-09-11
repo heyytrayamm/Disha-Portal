@@ -77,6 +77,8 @@ export interface ScannedProduct {
   ruleChecks: LegalRuleCheck[];
   overallScore: number | null; // 0 - 100 or null if UNABLE_TO_ASSESS
   overallStatus: 'COMPLIANT' | 'NON_COMPLIANT' | 'NEEDS_REVIEW' | 'UNABLE_TO_ASSESS';
+  status?: string;
+  score?: number | null;
   violationsCount: {
     critical: number;
     major: number;
