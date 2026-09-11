@@ -79,8 +79,8 @@ def _execute_label_inspection(
     # 3. Product Label Validation Check (determines whether image is a genuine commodity label)
     is_valid_label = FieldExtractor.is_packaged_commodity_label(ocr_items, full_text)
 
-    # 4. Structured Field Extraction from OCR text
-    extracted_fields = FieldExtractor.extract_structured_fields(
+    # 4. Structured Field Extraction from OCR text (Deterministic + Candidates)
+    extracted_fields, candidates_map = FieldExtractor.extract_fields_with_candidates(
         ocr_items,
         file_name=file_name,
         is_imported=is_imported
@@ -215,14 +215,30 @@ def _execute_label_inspection(
             "product": response_product
         }
 
-    # AI-assisted interpretation layer: used strictly for declaration extraction and ambiguity resolution
+    # Stage 3: Ambiguity Detection across all legal-metrology fields
+    ambiguity_report = FieldExtractor.detect_ambiguity(
+        extracted_fields,
+        candidates_map,
+        ocr_items,
+        full_text=full_text
+    )
+
+    # Stage 4: Targeted Ox Alpha Candidate Verification (Cost-gated; only for ambiguous cases)
     ai_triggered = False
-    if ox_alpha_service.should_consult_ai(extracted_fields, full_text=full_text, ocr_items=ocr_items):
+    if ox_alpha_service.should_consult_ai(extracted_fields, full_text=full_text, ocr_items=ocr_items, ambiguity_report=ambiguity_report):
         ai_triggered = True
-        logger.info(f"[SCAN_AI] Consulting Ox Alpha AI interpretation for ambiguous declarations in '{file_name}'")
-        ai_data = ox_alpha_service.interpret_declarations_from_ocr(full_text=full_text, ocr_items=ocr_items)
-        if ai_data:
-            extracted_fields = FieldExtractor.merge_ai_declarations(extracted_fields, ai_data)
+        logger.info(f"[SCAN_AI] Consulting Ox Alpha candidate verification for '{file_name}' (ambiguous fields: {ambiguity_report.ambiguous_fields})")
+        resolutions = ox_alpha_service.resolve_ambiguities(ambiguity_report, ocr_items=ocr_items, full_text=full_text)
+        if resolutions:
+            extracted_fields = FieldExtractor.apply_resolutions(extracted_fields, candidates_map, resolutions)
+        else:
+            # Fallback to general declaration interpretation if available
+            ai_data = ox_alpha_service.interpret_declarations_from_ocr(full_text=full_text, ocr_items=ocr_items)
+            if ai_data:
+                extracted_fields = FieldExtractor.merge_ai_declarations(extracted_fields, ai_data)
+
+    # Stage 5: Cross-Field Conflict Resolution
+    extracted_fields = FieldExtractor.resolve_cross_field_conflicts(extracted_fields, candidates_map, ocr_items)
 
     # 5. Deterministic Rule Evaluation for verified packaged commodity
     rule_checks, summary = ComplianceEngine.evaluate_compliance(
