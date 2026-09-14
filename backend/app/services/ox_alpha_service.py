@@ -40,6 +40,7 @@ class OxAlphaService:
         self._base_url = os.getenv("OX_ALPHA_BASE_URL", "https://oxalpha.run/api/v1").rstrip("/")
         self._model = os.getenv("OX_ALPHA_MODEL", "ox-alpha")
         self._client = None
+        self._http_client = None
 
         if self._api_key:
             try:
@@ -63,6 +64,14 @@ class OxAlphaService:
     @property
     def provider_name(self) -> str:
         return f"Ox Alpha ({self._base_url} - model: {self._model})"
+
+    @property
+    def http_client(self):
+        """Reuses persistent httpx client to leverage TCP connection pooling and keep-alive."""
+        if self._http_client is None or getattr(self._http_client, "is_closed", False):
+            import httpx
+            self._http_client = httpx.Client(timeout=15.0)
+        return self._http_client
 
     def should_consult_ai(
         self,
@@ -210,13 +219,12 @@ class OxAlphaService:
                     "response_format": {"type": "json_object"}
                 }
                 url = f"{self._base_url}/chat/completions"
-                with httpx.Client(timeout=30.0) as client:
-                    res = client.post(url, headers=headers, json=payload)
-                    if res.status_code == 200:
-                        data = res.json()
-                        choices = data.get("choices", [])
-                        if choices:
-                            raw_content = choices[0].get("message", {}).get("content", "")
+                res = self.http_client.post(url, headers=headers, json=payload)
+                if res.status_code == 200:
+                    data = res.json()
+                    choices = data.get("choices", [])
+                    if choices:
+                        raw_content = choices[0].get("message", {}).get("content", "")
             except Exception as e:
                 logger.warning(f"[OX_ALPHA_DISAMBIGUATE_ERROR] Direct HTTP request failed: {e}")
 
@@ -350,19 +358,18 @@ class OxAlphaService:
                 "response_format": {"type": "json_object"}
             }
             url = f"{self._base_url}/chat/completions"
-            with httpx.Client(timeout=30.0) as client:
-                res = client.post(url, headers=headers, json=payload)
-                if res.status_code == 200:
-                    data = res.json()
-                    choices = data.get("choices", [])
-                    if choices:
-                        raw_content = choices[0].get("message", {}).get("content", "")
-                        parsed = self._clean_and_parse_json(raw_content)
-                        if parsed:
-                            logger.info(f"[OX_ALPHA_SUCCESS] Structured interpretation received via HTTP. Fields: {list(parsed.keys())}")
-                            return parsed
-                else:
-                    logger.warning(f"[OX_ALPHA_ERROR] Ox Alpha HTTP error {res.status_code}: {res.text[:200]}")
+            res = self.http_client.post(url, headers=headers, json=payload)
+            if res.status_code == 200:
+                data = res.json()
+                choices = data.get("choices", [])
+                if choices:
+                    raw_content = choices[0].get("message", {}).get("content", "")
+                    parsed = self._clean_and_parse_json(raw_content)
+                    if parsed:
+                        logger.info(f"[OX_ALPHA_SUCCESS] Structured interpretation received via HTTP. Fields: {list(parsed.keys())}")
+                        return parsed
+            else:
+                logger.warning(f"[OX_ALPHA_ERROR] Ox Alpha HTTP error {res.status_code}: {res.text[:200]}")
         except Exception as e:
             logger.warning(f"[OX_ALPHA_ERROR] Direct HTTP request failed: {e}")
 

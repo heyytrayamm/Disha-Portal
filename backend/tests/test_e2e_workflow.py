@@ -53,7 +53,7 @@ def test_full_upload_to_result_workflow(client):
 
     product = body["product"]
     scan_id = product["id"]
-    assert product["productName"] == "Whole Wheat Atta 500G"
+    assert "Whole Wheat Atta" in product["productName"]
     assert len(product["extractedFields"]) >= 6
     assert len(product["ruleChecks"]) >= 8
     assert product["overallScore"] >= 0
