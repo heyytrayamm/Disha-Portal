@@ -98,7 +98,7 @@ def test_upload(filepath, label_type):
                 val = str(field['rawValue']).encode('ascii', errors='replace').decode('ascii')
                 print(f"  -> [{field['category']}] {field['fieldName']}: {val}")
     else:
-        print(f"Error response: {res.text}")
+        print(f"Error response: {res_data.text}")
 
 if __name__ == "__main__":
     face_path = create_face_image("test_face.jpg")

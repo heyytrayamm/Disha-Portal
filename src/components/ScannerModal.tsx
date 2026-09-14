@@ -176,21 +176,26 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
       }
 
 
-      // Finish analysis cleanly with real backend results
-      setTimeout(() => {
-        if (onSelectProduct) {
-          onSelectProduct(productResult!);
-        } else if (onScanComplete && (capturedImageDataUrl || selectedFile)) {
-          onScanComplete({
-            imageUrl: productResult!.imageUrl || currentUploadRef || '',
-            fileName: selectedFile?.name || 'Scanned_Label.jpg',
-            isImported: false,
-            pdpAreaCm2: 180
-          });
-        }
-        onClose();
-        setActiveMode('IDLE');
-      }, 500);
+      // Clear any pending step timers
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+      clearTimeout(t5);
+      clearTimeout(t6);
+
+      // Finish analysis immediately with real backend results (zero artificial delay)
+      if (onSelectProduct) {
+        onSelectProduct(productResult);
+      } else if (onScanComplete && (capturedImageDataUrl || selectedFile)) {
+        onScanComplete({
+          imageUrl: productResult.imageUrl || currentUploadRef || '',
+          fileName: selectedFile?.name || 'Scanned_Label.jpg',
+          isImported: false,
+          pdpAreaCm2: 180
+        });
+      }
+      onClose();
+      setActiveMode('IDLE');
 
     } catch (err: any) {
       console.error('Scan analysis error:', err);

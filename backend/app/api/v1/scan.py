@@ -22,6 +22,40 @@ logger = logging.getLogger("disha.scan")
 router = APIRouter(prefix="/scan", tags=["Label Scan & Preprocessing Pipeline"])
 
 
+def _should_trigger_fallback_ocr(ocr_items: List[Dict[str, Any]]) -> bool:
+    """
+    Evidence-based decision on whether secondary OCR pass on binarized image is necessary.
+    - If primary OCR found >= 10 items: rich detection, continue.
+    - If primary OCR found 4-9 items with high average confidence (>= 75%) and statutory packaging keywords, continue.
+    - If primary OCR found 0 items: try fallback on binarized image as a safety mechanism.
+    - If primary OCR produced low-confidence/fragmented reads, try fallback.
+    """
+    n_items = len(ocr_items)
+    if n_items >= 10:
+        return False
+
+    if n_items == 0:
+        return True
+
+    # Check confidence & statutory packaging indicators
+    confidences = [item.get("confidence", 0.0) for item in ocr_items]
+    avg_conf = sum(confidences) / n_items
+
+    joined_text = " ".join(it.get("text", "") for it in ocr_items).lower()
+    statutory_keywords = (
+        "mrp", "rs.", "inr", "net", "quantity", "weight", "mfg", "packed",
+        "batch", "lot", "consumer", "care", "helpline", "email",
+        "manufactur", "market", "commodity", "ingredients"
+    )
+    keyword_hits = sum(1 for kw in statutory_keywords if kw in joined_text)
+
+    # High-confidence concise label with clear statutory declarations needs no fallback
+    if avg_conf >= 75.0 and keyword_hits >= 2:
+        return False
+
+    return True
+
+
 def _execute_label_inspection(
     raw_img,
     file_name: str,
@@ -60,8 +94,8 @@ def _execute_label_inspection(
     # 2. OCR Text Extraction (PaddleOCR / RapidOCR / Tesseract)
     # Deep-learning OCR models (PaddleOCR/RapidOCR) perform optimal detection on color imagery
     ocr_items = ocr_engine.extract_text_and_boxes(raw_img, file_name=file_name)
-    if len(ocr_items) < 10:
-        # If color image produced few results, check binarized image
+    if _should_trigger_fallback_ocr(ocr_items):
+        # Fallback to binarized image only when evidence shows primary OCR was insufficient
         bin_items = ocr_engine.extract_text_and_boxes(processed_binary, file_name=file_name)
         if len(bin_items) > len(ocr_items):
             ocr_items = bin_items

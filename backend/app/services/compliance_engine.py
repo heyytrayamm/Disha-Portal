@@ -518,7 +518,9 @@ class RuleRegistry:
 
         score = round((passed_rules / total_rules) * 100, 1) if total_rules > 0 else 100.0
         
-        if score >= 80.0:
+        if failed_critical > 0:
+            overall_status = "NON_COMPLIANT"
+        elif score >= 80.0:
             overall_status = "COMPLIANT"
         elif score >= 60.0:
             overall_status = "NEEDS_REVIEW"

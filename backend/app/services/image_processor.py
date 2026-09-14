@@ -77,11 +77,11 @@ class ImagePreprocessor:
         4. Adaptive Otsu Binarization
         5. Deskewing via minimum area rectangle
         """
-        binary, metadata, _ = ImagePreprocessor.preprocess_image_with_stages(img)
+        binary, metadata, _ = ImagePreprocessor.preprocess_image_with_stages(img, include_all_stages=False)
         return binary, metadata
 
     @staticmethod
-    def preprocess_image_with_stages(img: np.ndarray) -> Tuple[np.ndarray, Dict[str, Any], Dict[str, str]]:
+    def preprocess_image_with_stages(img: np.ndarray, include_all_stages: bool = False) -> Tuple[np.ndarray, Dict[str, Any], Dict[str, str]]:
         """
         Executes OpenCV pipeline and returns (final_binary, metadata, stages_base64_dict).
         Stages dict contains base64 representations of:
@@ -91,8 +91,12 @@ class ImagePreprocessor:
         - bilateral_denoised
         - otsu_binarized
         - deskewed
+
+        To prevent unnecessary computation and megabytes of duplicate base64 serialization,
+        diagnostic stages are only base64-encoded when include_all_stages=True.
+        The 'original' stage is always provided for frontend display.
         """
-        stages_b64 = {}
+        stages_b64: Dict[str, str] = {}
         stages_b64["original"] = ImagePreprocessor.encode_mat_to_base64(img)
 
         # 1. Grayscale
@@ -100,20 +104,20 @@ class ImagePreprocessor:
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         else:
             gray = img.copy()
-        stages_b64["grayscale"] = ImagePreprocessor.encode_mat_to_base64(gray)
+        stages_b64["grayscale"] = ImagePreprocessor.encode_mat_to_base64(gray) if include_all_stages else ""
 
         # 2. Contrast enhancement via CLAHE
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         enhanced = clahe.apply(gray)
-        stages_b64["clahe_enhanced"] = ImagePreprocessor.encode_mat_to_base64(enhanced)
+        stages_b64["clahe_enhanced"] = ImagePreprocessor.encode_mat_to_base64(enhanced) if include_all_stages else ""
 
-        # 3. Edge-preserving Bilateral Filter
-        denoised = cv2.bilateralFilter(enhanced, 9, 75, 75)
-        stages_b64["bilateral_denoised"] = ImagePreprocessor.encode_mat_to_base64(denoised)
+        # 3. Edge-preserving Bilateral Filter (optimized diameter and sigma for speed)
+        denoised = cv2.bilateralFilter(enhanced, 5, 50, 50)
+        stages_b64["bilateral_denoised"] = ImagePreprocessor.encode_mat_to_base64(denoised) if include_all_stages else ""
 
         # 4. Otsu Adaptive Thresholding
         _, binary = cv2.threshold(denoised, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        stages_b64["otsu_binarized"] = ImagePreprocessor.encode_mat_to_base64(binary)
+        stages_b64["otsu_binarized"] = ImagePreprocessor.encode_mat_to_base64(binary) if include_all_stages else ""
 
         # 5. Deskewing
         angle = 0.0
@@ -137,11 +141,14 @@ class ImagePreprocessor:
         except Exception:
             angle = 0.0
 
-        stages_b64["deskewed"] = ImagePreprocessor.encode_mat_to_base64(deskewed)
+        stages_b64["deskewed"] = ImagePreprocessor.encode_mat_to_base64(deskewed) if include_all_stages else ""
 
         metadata = {
             "original_width": img.shape[1],
             "original_height": img.shape[0],
+            "width": img.shape[1],
+            "height": img.shape[0],
+            "dimensions": {"width": img.shape[1], "height": img.shape[0]},
             "channels": img.shape[2] if len(img.shape) == 3 else 1,
             "deskew_angle_deg": round(angle, 2),
             "clahe_applied": True,
