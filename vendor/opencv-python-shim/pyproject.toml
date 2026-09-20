@@ -1,0 +1,9 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opencv-python"
+version = "999.0.0"
+description = "Shim: satisfies opencv-python dependency via opencv-python-headless for serverless environments (Vercel/Lambda) that lack X11/libxcb."
+dependencies = ["opencv-python-headless>=4.5.1.48"]

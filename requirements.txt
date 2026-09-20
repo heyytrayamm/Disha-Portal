@@ -18,12 +18,7 @@ email-validator>=2.1.0
 onnxruntime>=1.17.0
 openai>=1.0.0
 google-genai>=1.0.0
-# --- rapidocr-onnxruntime transitive deps (minus opencv-python) ---
-pyclipper>=1.2.0
-Shapely>=1.7.1
-six>=1.15.0
-Pillow
-PyYAML
-tqdm
-# Install rapidocr-onnxruntime with --no-deps to avoid pulling opencv-python (GUI)
--r requirements-nodeps.txt
+# Local shim: satisfies rapidocr-onnxruntime's opencv-python dependency
+# using opencv-python-headless (no X11/libxcb needed on Vercel).
+./vendor/opencv-python-shim
+rapidocr-onnxruntime>=1.2.0
