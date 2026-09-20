@@ -40,3 +40,6 @@ backend/uploads/
 .env.*
 !.env.example
 
+# Generated inspection reports
+reports/
+
