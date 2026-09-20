@@ -1,0 +1,7 @@
+# Install rapidocr-onnxruntime WITHOUT its dependencies.
+# This prevents it from pulling in opencv-python (GUI variant),
+# which requires libxcb/X11 and crashes in serverless environments.
+# All its actual runtime deps (numpy, onnxruntime, Pillow, etc.)
+# are listed in the main requirements.txt.
+--no-deps
+rapidocr-onnxruntime>=1.2.0
