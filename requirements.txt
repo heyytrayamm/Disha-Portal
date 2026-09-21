@@ -20,5 +20,5 @@ openai>=1.0.0
 google-genai>=1.0.0
 # Local shim: satisfies rapidocr-onnxruntime's opencv-python dependency
 # using opencv-python-headless (no X11/libxcb needed on Vercel).
-./vendor/opencv-python-shim
+opencv-python @ file:./vendor/opencv-python-shim
 rapidocr-onnxruntime>=1.2.0

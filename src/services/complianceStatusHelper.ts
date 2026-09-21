@@ -137,12 +137,12 @@ export function getComplianceRemarks(
       ? missingOrFailedFields.join(', ')
       : 'Minor label declarations';
 
-    const hasConsumerCarePhoneMissing = failedChecks.some(r => 
+    const hasConsumerCarePhoneMissing = failedChecks.some(r =>
       r.category === 'CONSUMER_CARE' && /telephone|phone/i.test(r.title + ' ' + r.description)
     );
 
     let summaryText = `The product meets the overall compliance threshold (${score}/100). ${specificFieldsDesc} is missing and should be added to the label. Product otherwise meets the required compliance threshold. Please update the details.`;
-    
+
     if (hasConsumerCarePhoneMissing) {
       summaryText = `Consumer Care telephone number is missing. Product otherwise meets the required compliance threshold. Please update the Consumer Care details.`;
     }

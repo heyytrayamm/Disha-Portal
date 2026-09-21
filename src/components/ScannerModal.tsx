@@ -32,7 +32,6 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-
   // Stop camera when modal is closed or component unmounts
   useEffect(() => {
     return () => {
@@ -59,7 +58,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
     }
   };
 
-  // Open real webcam using navigator.mediaDevices.getUserMedia()
+  // Open webcam
   const handleOpenCamera = async () => {
     stopCamera();
     setCameraError(null);
@@ -78,7 +77,6 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
       setCameraStream(stream);
       setActiveMode('CAMERA');
 
-      // Bind stream to video element
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -93,7 +91,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
     }
   };
 
-  // Capture Photo from live webcam feed
+  // Capture Photo from webcam
   const handleCapturePhoto = () => {
     if (!videoRef.current) return;
 
@@ -108,13 +106,12 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
       const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
       setCapturedImageDataUrl(dataUrl);
 
-      // Stop camera stream after capture
       stopCamera();
       setActiveMode('PREVIEW');
     }
   };
 
-  // Handle normal file upload picker
+  // File upload picker
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -130,7 +127,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
     reader.readAsDataURL(file);
   };
 
-  // Run full analysis on captured photo or uploaded image file
+  // Run full compliance analysis
   const handleRunAnalysis = async () => {
     if (!capturedImageDataUrl && !selectedFile) return;
 
@@ -139,21 +136,18 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
     setActiveMode('ANALYZING');
     setPipelineStep(1);
 
-    // Visual step progress simulation
-    const t2 = setTimeout(() => setPipelineStep(2), 700);
-    const t3 = setTimeout(() => setPipelineStep(3), 1400);
-    const t4 = setTimeout(() => setPipelineStep(4), 2100);
-    const t5 = setTimeout(() => setPipelineStep(5), 2800);
-    const t6 = setTimeout(() => setPipelineStep(6), 3500);
+    const t2 = setTimeout(() => setPipelineStep(2), 600);
+    const t3 = setTimeout(() => setPipelineStep(3), 1200);
+    const t4 = setTimeout(() => setPipelineStep(4), 1800);
+    const t5 = setTimeout(() => setPipelineStep(5), 2400);
+    const t6 = setTimeout(() => setPipelineStep(6), 3000);
 
     try {
       let productResult: ScannedProduct | null = null;
 
       if (selectedFile) {
-        // Upload image file to FastAPI backend
         productResult = await ApiService.uploadImageFile(selectedFile);
       } else if (capturedImageDataUrl) {
-        // Base64 camera photo scan
         productResult = await ApiService.scanImage({
           imageUrl: capturedImageDataUrl,
           fileName: `Webcam_Label_Capture_${Date.now()}.jpg`,
@@ -166,7 +160,6 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
         throw new Error("Invalid analysis response received from compliance server.");
       }
 
-      // Preserve the CURRENT uploaded image reference for immediate and fallback rendering
       const currentUploadRef = capturedImageDataUrl || (selectedFile ? URL.createObjectURL(selectedFile) : '');
       if (!productResult.sourceImageUrl || productResult.sourceImageUrl === 'N/A') {
         productResult.sourceImageUrl = currentUploadRef;
@@ -175,15 +168,12 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
         productResult.imageUrl = currentUploadRef;
       }
 
-
-      // Clear any pending step timers
       clearTimeout(t2);
       clearTimeout(t3);
       clearTimeout(t4);
       clearTimeout(t5);
       clearTimeout(t6);
 
-      // Finish analysis immediately with real backend results (zero artificial delay)
       if (onSelectProduct) {
         onSelectProduct(productResult);
       } else if (onScanComplete && (capturedImageDataUrl || selectedFile)) {
@@ -204,12 +194,12 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
       clearTimeout(t4);
       clearTimeout(t5);
       clearTimeout(t6);
-      setAnalysisError(err?.message || 'Unable to complete compliance analysis. Please ensure backend server is running.');
+      setAnalysisError(err?.message || 'Unable to complete compliance analysis. Please check server connectivity.');
       setActiveMode('PREVIEW');
     }
   };
 
-  // Drag and drop handlers
+  // Drag and drop
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -237,21 +227,21 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
 
   const pipelineSteps = [
     { step: 1, label: 'Image Quality Check', sub: 'Resolution and lighting validated.' },
-    { step: 2, label: 'OCR Extraction', sub: 'Text layers successfully separated and digitized.' },
-    { step: 3, label: 'Label Info Detection', sub: 'Nutritional facts and ingredients mapped.' },
-    { step: 4, label: 'Rule Matching', sub: 'Comparing extracted data against FSSAI guidelines...' },
-    { step: 5, label: 'Compliance Assessment', sub: 'Pending rule evaluation.' },
-    { step: 6, label: 'Score Calculation', sub: 'Pending assessment completion.' },
+    { step: 2, label: 'OCR Extraction', sub: 'Text layers separated and digitized.' },
+    { step: 3, label: 'Label Info Detection', sub: 'MRP, date, net quantity, packer identified.' },
+    { step: 4, label: 'Rule Matching', sub: 'Evaluating against Legal Metrology Rules, 2011...' },
+    { step: 5, label: 'Compliance Assessment', sub: 'Statutory verdict calculation...' },
+    { step: 6, label: 'Score Calculation', sub: 'Finalizing audit index...' },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="bg-surface-container-lowest border border-border-subtle w-full max-w-4xl rounded-xl shadow-lg overflow-hidden relative text-text-main font-body-md max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="bg-[#FFFFFF] border border-[#E2DFD8] rounded-xs shadow-2xl w-full max-w-3xl overflow-hidden relative text-[#141413] max-h-[90vh] flex flex-col animate-slide-down">
         
-        {/* Hidden Canvas for Frame Capturing */}
+        {/* Hidden Canvas */}
         <canvas ref={canvasRef} className="hidden" />
 
-        {/* Hidden Native File Input */}
+        {/* Hidden File Input */}
         <input
           type="file"
           ref={fileInputRef}
@@ -261,28 +251,35 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
         />
 
         {/* Modal Header */}
-        <div className="px-gutter py-md bg-surface border-b border-border-subtle flex items-center justify-between sticky top-0 z-10">
-          <div className="flex items-center gap-sm">
-            <div className="w-8 h-8 rounded-lg bg-primary-container text-on-primary flex items-center justify-center">
-              <span className="material-symbols-outlined text-[20px]">document_scanner</span>
+        <div className="px-5 py-3.5 border-b border-[#E2DFD8] flex items-center justify-between bg-[#FAF9F6]">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xs bg-[#141413] text-[#FFFFFF] flex items-center justify-center font-bold text-xs">
+              <span className="material-symbols-outlined text-[18px]">photo_camera</span>
             </div>
             <div>
-              <h3 className="font-headline-md text-headline-md font-bold text-primary">Scan Product Label</h3>
-              <p className="font-label-sm text-label-sm text-text-muted">Capture or upload a clear image of the product label</p>
+              <div className="flex items-center gap-2">
+                <span className="section-tag">OPTICAL ACQUISITION</span>
+                <span className="text-[#CCC9BF]">&bull;</span>
+                <span className="tech-tag">PACKAGE SCAN</span>
+              </div>
+              <h3 className="text-sm font-bold text-[#141413]">Scan Product Label</h3>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded text-text-muted hover:text-primary transition-colors cursor-pointer">
+          <button 
+            onClick={onClose} 
+            className="p-1 text-[#6E6D67] hover:text-[#141413] rounded-xs cursor-pointer"
+          >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-gutter">
+        <div className="p-5 overflow-y-auto flex-1">
           
-          {/* ═══ CAMERA LIVE MODE ═══ */}
+          {/* ═══ LIVE CAMERA MODE ═══ */}
           {activeMode === 'CAMERA' && (
-            <div className="space-y-md">
-              <div className="relative bg-slate-950 rounded-xl overflow-hidden min-h-[320px] flex items-center justify-center border border-border-subtle">
+            <div className="space-y-4">
+              <div className="evidence-viewport relative bg-[#000000] rounded-xs overflow-hidden min-h-[340px] flex items-center justify-center">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -290,282 +287,233 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
                   muted
                   className="w-full max-h-[380px] object-contain"
                 />
-                
-                {/* Live Scanning Reticle Overlay */}
-                <div className="absolute inset-8 border-2 border-dashed border-primary-fixed rounded-lg pointer-events-none flex items-center justify-center">
-                  <div className="scan-line" />
-                  <p className="text-white text-xs font-label-md bg-primary/80 px-3 py-1 rounded-full backdrop-blur-xs">
-                    Align Packaging Label inside Frame
-                  </p>
+
+                {/* Evidence Corner Brackets */}
+                <div className="corner-bracket corner-bracket-tl !border-white" />
+                <div className="corner-bracket corner-bracket-tr !border-white" />
+                <div className="corner-bracket corner-bracket-bl !border-white" />
+                <div className="corner-bracket corner-bracket-br !border-white" />
+
+                <div className="scan-line" />
+
+                <div className="absolute top-3 left-3 bg-black/70 text-white text-[10px] font-mono px-2 py-0.5 rounded-xs">
+                  OPTICAL FEED: LIVE
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3 pt-2">
                 <button
-                  type="button"
-                  onClick={() => {
-                    stopCamera();
-                    setActiveMode('IDLE');
-                  }}
-                  className="px-md py-sm rounded border border-border-subtle bg-surface text-secondary font-label-md text-label-md hover:bg-surface-container-low transition-colors flex items-center gap-xs cursor-pointer"
+                  onClick={() => { stopCamera(); setActiveMode('IDLE'); }}
+                  className="btn-secondary text-xs"
                 >
-                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                  <span>Cancel</span>
+                  Cancel
                 </button>
-
                 <button
-                  type="button"
                   onClick={handleCapturePhoto}
-                  className="px-lg py-sm rounded bg-status-pass text-white font-label-md text-label-md hover:opacity-90 transition-opacity flex items-center gap-xs shadow-md font-bold cursor-pointer"
+                  className="btn-accent text-xs font-semibold px-6"
                 >
-                  <span className="material-symbols-outlined text-[20px]">photo_camera</span>
+                  <span className="material-symbols-outlined text-[18px]">camera</span>
                   <span>Capture Photo</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* ═══ CAPTURED PREVIEW MODE ═══ */}
+          {/* ═══ PREVIEW MODE ═══ */}
           {activeMode === 'PREVIEW' && capturedImageDataUrl && (
-            <div className="space-y-md">
-              <div className="text-center">
-                <h4 className="font-headline-md text-headline-md font-semibold text-text-main">Preview Packaging Label Image</h4>
-                <p className="font-label-sm text-label-sm text-text-muted mt-1">Verify that all statutory text declarations are clear and readable</p>
-              </div>
-
+            <div className="space-y-4">
               {analysisError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
-                  <span className="material-symbols-outlined text-[20px] text-red-600 shrink-0">error</span>
-                  <div>
-                    <p className="font-semibold">Analysis Failed</p>
-                    <p>{analysisError}</p>
-                  </div>
+                <div className="p-3 bg-[#FDE8E6] border border-[#F8B4AF] rounded-xs text-xs text-[#C5281B] flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">error</span>
+                  <span>{analysisError}</span>
                 </div>
               )}
 
-              <div className="bg-surface-container-low rounded-xl p-3 border border-border-subtle text-center">
+              <div className="relative border border-[#D5D2C8] rounded-xs overflow-hidden max-h-[380px] bg-[#FAF9F6] flex items-center justify-center p-2">
                 <img
                   src={capturedImageDataUrl}
-                  alt="Captured Packaging Label"
-                  className="max-h-[300px] mx-auto rounded border border-border-subtle object-contain"
+                  alt="Captured Preview"
+                  className="max-h-[360px] object-contain rounded-xs"
                 />
+                <div className="corner-bracket corner-bracket-tl" />
+                <div className="corner-bracket corner-bracket-tr" />
+                <div className="corner-bracket corner-bracket-bl" />
+                <div className="corner-bracket corner-bracket-br" />
               </div>
 
-              <div className="flex items-center justify-between pt-xs">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCapturedImageDataUrl(null);
-                    setSelectedFile(null);
-                    handleOpenCamera();
-                  }}
-                  className="px-md py-sm rounded border border-border-subtle bg-surface text-secondary font-label-md text-label-md hover:bg-surface-container-low transition-colors flex items-center gap-xs font-semibold cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[18px]">refresh</span>
-                  <span>Retake Photo</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleRunAnalysis}
-                  className="px-lg py-sm rounded bg-primary-container text-on-primary font-label-md text-label-md hover:bg-primary transition-colors flex items-center gap-xs shadow-md font-bold cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[20px]">analytics</span>
-                  <span>Analyze Label Compliance</span>
-                </button>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                <div className="text-xs text-[#6E6D67] font-mono">
+                  {selectedFile ? `FILE: ${selectedFile.name}` : 'CAMERA FRAME CAPTURED'}
+                </div>
+                <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                  <button
+                    onClick={() => {
+                      setCapturedImageDataUrl(null);
+                      setSelectedFile(null);
+                      setActiveMode('IDLE');
+                    }}
+                    className="btn-secondary text-xs flex-1 sm:flex-none"
+                  >
+                    Retake / Re-upload
+                  </button>
+                  <button
+                    onClick={handleRunAnalysis}
+                    className="btn-primary text-xs font-semibold flex-1 sm:flex-none px-5"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">verified</span>
+                    <span>Run Verification</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
-          {/* ═══ ANALYZING STEP PROGRESS (Stitch: analyzing_label..._disha) ═══ */}
+          {/* ═══ ANALYZING PIPELINE MODE ═══ */}
           {activeMode === 'ANALYZING' && (
-            <div className="flex flex-col items-center gap-xl py-md">
-              <div className="text-center space-y-sm">
-                <h1 className="font-headline-xl text-headline-xl text-primary">Processing Label Data</h1>
-                <p className="font-body-lg text-body-lg text-text-muted flex items-center justify-center gap-xs">
-                  Analyzing product label for regulatory compliance
-                  <span className="flex">
-                    <span className="loading-dot">.</span><span className="loading-dot">.</span><span className="loading-dot">.</span>
-                  </span>
+            <div className="py-6 space-y-6 max-w-lg mx-auto">
+              <div className="text-center space-y-1">
+                <span className="section-tag">OCR & LEGAL PIPELINE</span>
+                <h3 className="text-lg font-bold text-[#141413]">
+                  Evaluating Statutory Declarations
+                </h3>
+                <p className="text-xs text-[#6E6D67]">
+                  Extracting label text layers and mapping to Legal Metrology Rule 6 specifications.
                 </p>
               </div>
 
-              <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-lg items-start">
-                {/* Left: Visualization Canvas */}
-                <div className="bg-surface-container-lowest border border-border-subtle rounded-xl p-md flex flex-col shadow-sm relative overflow-hidden h-[350px]">
-                  {capturedImageDataUrl && (
-                    <div className="absolute inset-0 z-0 opacity-20 filter blur-sm">
-                      <div className="bg-cover bg-center w-full h-full" style={{ backgroundImage: `url('${capturedImageDataUrl}')` }} />
-                    </div>
-                  )}
-                  <div className="relative z-10 flex-grow flex items-center justify-center">
-                    <div className="relative w-56 h-56 border-2 border-primary-container/30 rounded-lg overflow-hidden bg-surface-container-lowest/80 backdrop-blur-md">
-                      {/* Abstract label representation */}
-                      <div className="absolute inset-4 border border-border-subtle opacity-50 flex flex-col gap-sm p-sm">
-                        <div className="w-3/4 h-4 bg-outline-variant rounded" />
-                        <div className="w-1/2 h-3 bg-outline-variant rounded" />
-                        <div className="w-full h-16 bg-surface-variant rounded mt-sm" />
-                        <div className="flex gap-xs mt-auto">
-                          <div className="w-8 h-8 bg-surface-variant rounded-full" />
-                          <div className="w-8 h-8 bg-surface-variant rounded-full" />
-                        </div>
+              {/* Steps Progress Checklist */}
+              <div className="disha-card p-4 divide-y divide-[#ECE9E2]">
+                {pipelineSteps.map((item) => {
+                  const isDone = pipelineStep > item.step;
+                  const isActive = pipelineStep === item.step;
+                  return (
+                    <div key={item.step} className="py-2.5 flex items-start gap-3 text-xs">
+                      <span className={`w-5 h-5 rounded-xs flex items-center justify-center font-mono text-[10px] font-bold shrink-0 mt-0.5 ${
+                        isDone ? 'bg-[#EBF7EE] text-[#1B7F43]' :
+                        isActive ? 'bg-[#141413] text-[#FFFFFF]' :
+                        'bg-[#F4F2EB] text-[#8F8E87]'
+                      }`}>
+                        {isDone ? '✓' : item.step}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-semibold ${isActive ? 'text-[#141413]' : isDone ? 'text-[#141413]' : 'text-[#8F8E87]'}`}>
+                          {item.label}
+                        </p>
+                        <p className="text-[11px] text-[#8F8E87] mt-0.5">{item.sub}</p>
                       </div>
-                      <div className="scan-line" />
-                      {/* Focus corners */}
-                      <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-primary-container" />
-                      <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-primary-container" />
-                      <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-primary-container" />
-                      <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-primary-container" />
                     </div>
-                  </div>
-                  <div className="relative z-10 mt-auto bg-surface-container-lowest border border-border-subtle rounded-lg p-sm flex items-center justify-between">
-                    <div className="flex items-center gap-sm">
-                      <span className="material-symbols-outlined text-primary-container animate-spin" style={{ animationDuration: '3s' }}>settings</span>
-                      <span className="font-label-md text-label-md text-text-muted uppercase">Engine Status</span>
-                    </div>
-                    <span className="font-label-md text-label-md text-primary-container bg-secondary-container px-2 py-1 rounded">Active</span>
-                  </div>
-                </div>
-
-                {/* Right: Pipeline Progress */}
-                <div className="bg-surface-container-lowest border border-border-subtle rounded-xl p-lg flex flex-col shadow-sm">
-                  <h2 className="font-headline-md text-headline-md text-text-main border-b border-border-subtle pb-sm mb-md">Audit Pipeline Status</h2>
-                  <div className="flex flex-col gap-md relative">
-                    {/* Vertical tracking line */}
-                    <div className="absolute left-[11px] top-4 bottom-4 w-[2px] bg-border-subtle z-0" />
-
-                    {pipelineSteps.map((item) => {
-                      const isDone = pipelineStep > item.step;
-                      const isActive = pipelineStep === item.step;
-                      const isPending = pipelineStep < item.step;
-
-                      return (
-                        <div key={item.step} className={`flex items-start gap-md relative z-10 ${
-                          isActive ? 'bg-surface-container-low p-sm -ml-sm rounded-lg border border-border-subtle' : ''
-                        } ${isPending ? 'opacity-50' : ''}`}>
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ring-4 ring-surface-container-lowest ${
-                            isDone ? 'bg-status-pass text-on-primary' :
-                            isActive ? 'bg-primary-container text-on-primary' :
-                            'bg-surface-variant text-text-muted border border-border-subtle'
-                          }`}>
-                            {isDone ? (
-                              <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
-                            ) : isActive ? (
-                              <span className="material-symbols-outlined text-[16px] animate-spin" style={{ animationDuration: '2s' }}>sync</span>
-                            ) : (
-                              <span className="font-label-md text-label-md">{item.step}</span>
-                            )}
-                          </div>
-                          <div className="flex-grow">
-                            <h3 className={`font-label-md text-label-md ${isDone ? 'text-text-main' : isActive ? 'text-primary-container' : 'text-text-muted'}`}>
-                              {item.label}
-                            </h3>
-                            <p className={`font-body-md text-body-md mt-xs ${isActive ? 'text-text-main' : 'text-text-muted'}`}>
-                              {item.sub}
-                            </p>
-                            {isActive && (
-                              <div className="w-full bg-surface-variant h-1 mt-sm rounded-full overflow-hidden">
-                                <div className="bg-primary-container h-full w-2/3 rounded-full animate-pulse" />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                  );
+                })}
               </div>
 
-              <button
-                onClick={() => { onClose(); setActiveMode('IDLE'); }}
-                className="bg-surface-container-lowest border border-border-subtle text-primary-container px-lg py-sm rounded-md font-label-md text-label-md hover:bg-surface-container-low transition-colors flex items-center gap-sm shadow-sm cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[18px]">cancel</span>
-                Cancel Audit
-              </button>
+              <div className="text-center">
+                <button
+                  onClick={() => { onClose(); setActiveMode('IDLE'); }}
+                  className="btn-secondary text-xs"
+                >
+                  Cancel Inspection
+                </button>
+              </div>
             </div>
           )}
 
-          {/* ═══ IDLE MODE (Stitch: scan_product_disha) ═══ */}
+          {/* ═══ IDLE MODE ═══ */}
           {activeMode === 'IDLE' && (
-            <div className="space-y-lg">
+            <div className="space-y-5">
               {cameraError && (
-                <div className="p-md rounded bg-error-container text-on-error-container border border-error/30 text-body-md flex items-center gap-sm">
-                  <span className="material-symbols-outlined text-[20px]">error</span>
+                <div className="p-3 bg-[#FDE8E6] border border-[#F8B4AF] rounded-xs text-xs text-[#C5281B] flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">error</span>
                   <span>{cameraError}</span>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg">
-                {/* Upload Area (Main Column) */}
-                <div className="lg:col-span-2 flex flex-col gap-md">
-                  {/* Drag & Drop Zone */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                
+                {/* Drag & Drop Box (8 cols) */}
+                <div className="lg:col-span-8">
                   <div
-                    className="flex flex-col items-center justify-center p-xl border-2 border-dashed border-border-subtle rounded-xl bg-surface-container-lowest min-h-[300px] cursor-pointer transition-all hover:border-primary hover:bg-secondary-container/20"
+                    className="border-2 border-dashed border-[#D5D2C8] rounded-xs bg-[#FAF9F6] p-8 min-h-[280px] flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#D4381D] hover:bg-[#FAF5F4] transition-all"
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <div className="h-16 w-16 bg-primary-container text-on-primary rounded-full flex items-center justify-center mb-md">
-                      <span className="material-symbols-outlined text-[32px]">upload_file</span>
+                    <div className="w-12 h-12 rounded-full border border-[#D5D2C8] bg-[#FFFFFF] flex items-center justify-center text-[#D4381D] mb-3">
+                      <span className="material-symbols-outlined text-[24px]">cloud_upload</span>
                     </div>
-                    <h3 className="font-headline-md text-headline-md mb-xs">Drag and drop label image here</h3>
-                    <p className="font-body-md text-body-md text-text-muted mb-lg">Supports JPG, PNG, WebP (Max 10MB)</p>
-                    <div className="flex flex-wrap gap-md justify-center w-full" onClick={(e) => e.stopPropagation()}>
+                    <h4 className="text-sm font-bold text-[#141413]">
+                      Drag & Drop Packaging Label Image
+                    </h4>
+                    <p className="text-xs text-[#6E6D67] mt-1 mb-4">
+                      Supports high-resolution JPG, PNG, WebP (Max 10MB)
+                    </p>
+
+                    <div className="flex flex-wrap items-center justify-center gap-2.5" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={handleOpenCamera}
-                        className="flex items-center justify-center gap-xs px-lg py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity cursor-pointer"
+                        className="btn-accent text-xs"
                       >
-                        <span className="material-symbols-outlined text-[18px]">photo_camera</span>
-                        Take Photo
+                        <span className="material-symbols-outlined text-[16px]">photo_camera</span>
+                        <span>Use Camera</span>
                       </button>
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center justify-center gap-xs px-lg py-sm bg-surface-container-lowest border border-border-subtle text-primary rounded-lg font-label-md text-label-md hover:bg-surface-container-low transition-colors cursor-pointer"
+                        className="btn-secondary text-xs"
                       >
-                        <span className="material-symbols-outlined text-[18px]">image</span>
-                        Upload Image
+                        <span className="material-symbols-outlined text-[16px]">folder_open</span>
+                        <span>Browse File</span>
                       </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Guidance Column */}
-                <div className="lg:col-span-1">
-                  <div className="bg-surface-container-lowest border border-border-subtle rounded-xl p-md h-full">
-                    <h3 className="font-headline-md text-headline-md mb-md flex items-center gap-xs text-primary">
-                      <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>rule</span>
-                      Scanning Guidelines
-                    </h3>
-                    <ul className="flex flex-col gap-sm">
-                      {[
-                        { title: 'Ensure Proper Framing', desc: 'The entire label must be visible within the frame.' },
-                        { title: 'High Resolution', desc: 'Text and barcodes must be legible and in focus.' },
-                        { title: 'Avoid Glare & Shadows', desc: 'Ensure even lighting across the label surface.' },
-                        { title: 'Capture All Sides', desc: 'If information spans multiple panels, upload multiple images.' },
-                      ].map((g) => (
-                        <li key={g.title} className="flex items-start gap-sm p-sm rounded-lg hover:bg-surface-container-low transition-colors border border-transparent">
-                          <span className="material-symbols-outlined text-status-pass" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                          <div>
-                            <p className="font-label-md text-label-md text-text-main mb-xs">{g.title}</p>
-                            <p className="font-body-md text-body-md text-text-muted">{g.desc}</p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="mt-lg p-sm bg-primary-fixed text-primary rounded-lg flex items-start gap-sm border border-primary-fixed-dim">
-                      <span className="material-symbols-outlined">lightbulb</span>
-                      <p className="font-label-sm text-label-sm">High-quality scans ensure accurate OCR and faster compliance verification.</p>
+                {/* Statutory Guidelines (4 cols) */}
+                <div className="lg:col-span-4">
+                  <div className="disha-card p-4 h-full flex flex-col justify-between">
+                    <div>
+                      <span className="section-tag">GUIDELINES</span>
+                      <h4 className="text-xs font-bold text-[#141413] mt-0.5 mb-2.5">
+                        Inspection Quality Tips
+                      </h4>
+
+                      <ul className="space-y-2 text-xs text-[#2D2C28]">
+                        {[
+                          { title: 'Clear Illumination', desc: 'Avoid heavy reflections and glare on shiny pouches.' },
+                          { title: 'Full Display Panel', desc: 'Capture the complete Principal Display Panel (PDP).' },
+                          { title: 'Orthogonal Angle', desc: 'Hold camera parallel to label surface to minimize skew.' }
+                        ].map((g, idx) => (
+                          <li key={idx} className="p-2 bg-[#FAF9F6] border border-[#E2DFD8] rounded-xs">
+                            <span className="font-semibold text-[#141413] block">{g.title}</span>
+                            <span className="text-[11px] text-[#6E6D67]">{g.desc}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="mt-3 pt-2 text-[10px] text-[#8F8E87] border-t border-[#E2DFD8] font-mono">
+                      LEGAL METROLOGY ACT 2009 &bull; S.36
                     </div>
                   </div>
                 </div>
+
               </div>
             </div>
           )}
 
         </div>
 
+        {/* Modal Footer */}
+        <div className="px-5 py-3 border-t border-[#E2DFD8] bg-[#FAF9F6] flex justify-end">
+          <button
+            onClick={onClose}
+            className="btn-secondary text-xs"
+          >
+            Close
+          </button>
+        </div>
+
       </div>
     </div>
   );
 };
+
+export default ScannerModal;

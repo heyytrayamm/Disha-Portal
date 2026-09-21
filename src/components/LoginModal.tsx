@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ShieldCheck, Lock, Mail, AlertCircle, Loader2, Eye, EyeOff, Check, UserCheck } from 'lucide-react';
+import { X, Lock, Mail, AlertCircle, Loader2, Eye, EyeOff, Check, UserCheck } from 'lucide-react';
 import type { UserRole, User } from '../types/auth';
 import { AuthService, DEMO_ACCOUNTS } from '../services/authService';
 
@@ -52,16 +52,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
     e.preventDefault();
     setError(null);
 
-    // Validate fields before proceeding
     const isValid = validateForm();
-    if (!isValid) {
-      return;
-    }
+    if (!isValid) return;
 
     setLoading(true);
 
     try {
-      // Authenticate against centralized auth service (handles mock & demo accounts)
       const result = AuthService.authenticate(identifier.trim(), password, role);
 
       if (!result.success || !result.user || !result.token) {
@@ -88,253 +84,245 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto w-screen h-screen left-0 top-0"
-      style={{ boxSizing: 'border-box' }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#141413]/40 backdrop-blur-xs overflow-y-auto"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
     >
       <div
-        className="bg-surface-container-lowest border border-border-subtle rounded-2xl shadow-2xl overflow-hidden relative z-50 text-text-main my-auto flex flex-col animate-fade-in"
-        style={{
-          width: 'min(500px, calc(100vw - 32px))',
-          maxWidth: '500px',
-          minWidth: 'min(360px, calc(100vw - 32px))',
-          boxSizing: 'border-box',
-          flexShrink: 0
-        }}
+        className="bg-[#FFFFFF] border border-[#E2DFD8] rounded-xs shadow-2xl overflow-hidden relative z-50 text-[#141413] my-auto w-full max-w-4xl grid grid-cols-1 md:grid-cols-12 animate-slide-down"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header - Light Theme Government Style */}
-        <div className="bg-surface-container-low px-6 py-5 border-b border-border-subtle flex justify-between items-center shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-primary-container text-on-primary flex items-center justify-center shadow-xs">
-              <ShieldCheck className="w-6 h-6 text-white" />
+        {/* ═══ LEFT: Welcome & Government Identity Panel ═══ */}
+        <div className="md:col-span-5 bg-[#FAF9F6] border-b md:border-b-0 md:border-r border-[#E2DFD8] p-6 sm:p-8 flex flex-col justify-between relative">
+          {/* Corner Bracket */}
+          <div className="corner-bracket corner-bracket-tl" />
+
+          <div>
+            {/* Header Brand */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xs bg-[#141413] text-[#FFFFFF] flex items-center justify-center font-bold text-xs">
+                <span className="text-[11px] font-mono tracking-tighter">DI</span>
+              </div>
+              <div>
+                <span className="font-bold tracking-tight text-[#141413] text-sm block">
+                  DISHA
+                </span>
+                <p className="text-[10px] text-[#6E6D67] -mt-0.5">
+                  Digital Inspection & Standards Hub
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-headline-md text-lg font-bold text-primary leading-tight">
-                Statutory Portal Sign In
-              </h3>
-              <p className="text-xs text-text-muted mt-0.5">
-                Disha &bull; Legal Metrology Compliance Enforcement
+
+            {/* Editorial Hero Statement */}
+            <div className="mt-8 sm:mt-12 space-y-2">
+              <span className="section-tag">LEGAL METROLOGY DIVISION</span>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#141413] leading-tight">
+                Welcome to<br />
+                <span className="text-[#D4381D]">DISHA</span>
+              </h2>
+              <p className="text-xs font-semibold text-[#141413]">
+                Digital Inspection & Standards Hub
+              </p>
+              <p className="text-xs text-[#6E6D67] mt-3 leading-relaxed">
+                AI-powered verification of packaged commodities for a compliant and safer marketplace.
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="text-text-muted hover:text-text-main p-1.5 rounded-lg hover:bg-surface-container-high transition cursor-pointer"
-            aria-label="Close modal"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          {/* Bottom Statutory Disclaimer */}
+          <div className="mt-8 pt-4 border-t border-[#EAE7DF] text-[10px] font-mono text-[#8F8E87] space-y-1">
+            <div className="flex items-center gap-1.5 text-[#141413] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1B7F43]" />
+              <span>RULE 6 ENFORCEMENT PORTAL</span>
+            </div>
+            <div>DIRECTORATE OF LEGAL METROLOGY &bull; GOI</div>
+          </div>
         </div>
 
-        {/* Form Body - with noValidate to prevent native browser popups */}
-        <form noValidate onSubmit={handleSubmit} className="p-6 space-y-4" style={{ boxSizing: 'border-box', width: '100%' }}>
-          {error && (
-            <div
-              className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-start gap-2 animate-fade-in"
-              role="alert"
-            >
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-              <span className="leading-snug font-medium">{error}</span>
-            </div>
-          )}
-
-          {/* Role Selection */}
+        {/* ═══ RIGHT: Officer Sign In Form ═══ */}
+        <div className="md:col-span-7 bg-[#FFFFFF] p-6 sm:p-8 flex flex-col justify-between">
           <div>
-            <label htmlFor="login-role" className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
-              Select Official Role
-            </label>
-            <div className="relative">
-              <select
-                id="login-role"
-                value={role}
-                disabled={loading}
-                onChange={(e) => {
-                  setRole(e.target.value as UserRole);
-                  if (error) setError(null);
-                }}
-                className="w-full bg-surface-container-lowest border border-border-subtle rounded-lg px-3 py-2.5 text-sm text-text-main font-medium focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all disabled:opacity-60 cursor-pointer shadow-2xs"
-              >
-                <option value="ENFORCEMENT_OFFICER">Enforcement / Inspection Officer</option>
-                <option value="SYSTEM_ADMIN">System Administrator</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Username / Email */}
-          <div>
-            <label htmlFor="login-identity" className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
-              Username or Official Email
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3 top-3 text-text-muted" />
-              <input
-                id="login-identity"
-                type="text"
-                autoComplete="username"
-                value={identifier}
-                disabled={loading}
-                onChange={(e) => {
-                  setIdentifier(e.target.value);
-                  if (fieldErrors.identifier) {
-                    setFieldErrors((prev) => ({ ...prev, identifier: undefined }));
-                  }
-                  if (error) setError(null);
-                }}
-                placeholder={role === 'ENFORCEMENT_OFFICER' ? 'inspector.arjun' : 'admin.priya'}
-                className={`w-full bg-surface-container-lowest border ${
-                  fieldErrors.identifier ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : 'border-border-subtle focus:border-primary focus:ring-primary/15'
-                } rounded-lg pl-9 pr-3 py-2.5 text-sm text-text-main focus:outline-none focus:ring-2 transition-all disabled:opacity-60 shadow-2xs`}
-              />
-            </div>
-            {fieldErrors.identifier && (
-              <p className="text-xs text-red-600 font-medium mt-1 flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>{fieldErrors.identifier}</span>
-              </p>
-            )}
-          </div>
-
-          {/* Password */}
-          <div>
-            <div className="flex justify-between items-center mb-1.5">
-              <label htmlFor="login-password" className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
-                Password
-              </label>
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-xl font-bold tracking-tight text-[#141413]">Officer Sign In</h3>
+                <p className="text-xs text-[#6E6D67] mt-0.5">Access your inspection workspace</p>
+              </div>
               <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                onClick={handleClose}
+                className="p-1 text-[#8F8E87] hover:text-[#141413] rounded-xs cursor-pointer transition-colors"
+                aria-label="Close"
               >
-                {showPassword ? (
-                  <>
-                    <EyeOff className="w-3 h-3" />
-                    <span>Hide</span>
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-3 h-3" />
-                    <span>Show password</span>
-                  </>
-                )}
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3 top-3 text-text-muted" />
-              <input
-                id="login-password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                value={password}
-                disabled={loading}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (fieldErrors.password) {
-                    setFieldErrors((prev) => ({ ...prev, password: undefined }));
-                  }
-                  if (error) setError(null);
-                }}
-                placeholder="Enter password"
-                className={`w-full bg-surface-container-lowest border ${
-                  fieldErrors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : 'border-border-subtle focus:border-primary focus:ring-primary/15'
-                } rounded-lg pl-9 pr-10 py-2.5 text-sm text-text-main focus:outline-none focus:ring-2 transition-all disabled:opacity-60 shadow-2xs font-mono`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-text-muted hover:text-text-main cursor-pointer"
-                title={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            {fieldErrors.password && (
-              <p className="text-xs text-red-600 font-medium mt-1 flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>{fieldErrors.password}</span>
-              </p>
-            )}
-          </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary-container hover:bg-primary text-on-primary font-semibold py-2.5 rounded-lg shadow-sm text-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer mt-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Authenticating...</span>
-              </>
-            ) : (
-              <>
-                <ShieldCheck className="w-4 h-4" />
-                <span>Sign In to Portal</span>
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Demo Accounts Section - Explicit & Readable */}
-        <div className="bg-surface-container-low px-6 py-4 border-t border-border-subtle">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-1">
-              <UserCheck className="w-3.5 h-3.5 text-primary" />
-              Demo Test Accounts (Click to auto-fill)
-            </span>
-            <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-              Testing Only
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-            {DEMO_ACCOUNTS.map((acc) => (
-              <div
-                key={acc.username}
-                onClick={() => handleFillDemo(acc.username, acc.passwords[0], acc.role)}
-                className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
-                  role === acc.role && identifier === acc.username
-                    ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20'
-                    : 'bg-surface-container-lowest border-border-subtle hover:border-primary/30 hover:bg-surface-container-high/40'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <span className="font-bold text-primary truncate">{acc.user.full_name}</span>
-                  <span className="text-[10px] font-semibold text-text-muted px-1.5 py-0.5 rounded bg-surface-container-low border border-border-subtle">
-                    {acc.role === 'SYSTEM_ADMIN' ? 'Admin' : 'Officer'}
-                  </span>
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              {error && (
+                <div className="p-3 rounded-xs bg-[#FDE8E6] border border-[#F8B4AF] text-[#C5281B] text-xs flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{error}</span>
                 </div>
-                <div className="text-[11px] text-text-muted space-y-0.5 font-mono">
-                  <div>User: <strong className="text-text-main font-semibold">{acc.username}</strong></div>
-                  <div>Pass: <strong className="text-text-main font-semibold">{acc.passwords[0]}</strong></div>
-                </div>
-                <div className="mt-2 pt-1 border-t border-border-subtle/50 flex justify-between items-center text-[10px]">
-                  <span className="text-primary font-medium flex items-center gap-0.5">
-                    {copiedAccount === acc.username ? (
-                      <>
-                        <Check className="w-3 h-3 text-emerald-600" />
-                        <span className="text-emerald-600 font-semibold">Filled!</span>
-                      </>
-                    ) : (
-                      'Click to load'
-                    )}
-                  </span>
-                  <span className="text-text-muted">{acc.role === 'SYSTEM_ADMIN' ? 'P avatar' : 'A avatar'}</span>
+              )}
+
+              {/* Official Access Role */}
+              <div>
+                <label className="text-[10px] font-mono uppercase text-[#6E6D67] block mb-1.5">
+                  Official Access Role
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRole('ENFORCEMENT_OFFICER')}
+                    className={`py-1.5 px-3 text-xs font-semibold rounded-xs border transition-colors cursor-pointer ${
+                      role === 'ENFORCEMENT_OFFICER'
+                        ? 'bg-[#141413] text-[#FFFFFF] border-[#141413]'
+                        : 'bg-[#FAF9F6] border-[#E2DFD8] text-[#6E6D67] hover:bg-[#F2F0E8]'
+                    }`}
+                  >
+                    Enforcement Officer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('SYSTEM_ADMIN')}
+                    className={`py-1.5 px-3 text-xs font-semibold rounded-xs border transition-colors cursor-pointer ${
+                      role === 'SYSTEM_ADMIN'
+                        ? 'bg-[#141413] text-[#FFFFFF] border-[#141413]'
+                        : 'bg-[#FAF9F6] border-[#E2DFD8] text-[#6E6D67] hover:bg-[#F2F0E8]'
+                    }`}
+                  >
+                    System Admin
+                  </button>
                 </div>
               </div>
-            ))}
+
+              {/* Username Field */}
+              <div>
+                <label className="text-[10px] font-mono uppercase text-[#6E6D67] block mb-1">
+                  Username
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-[#8F8E87]">
+                    <Mail className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => {
+                      setIdentifier(e.target.value);
+                      if (fieldErrors.identifier) setFieldErrors(prev => ({ ...prev, identifier: undefined }));
+                    }}
+                    placeholder="Enter username or official email"
+                    className={`w-full pl-8 pr-3 py-2 bg-[#FFFFFF] border text-xs text-[#141413] placeholder:text-[#8F8E87] rounded-xs focus:outline-none focus:border-[#141413] ${
+                      fieldErrors.identifier ? 'border-[#C5281B]' : 'border-[#E2DFD8]'
+                    }`}
+                  />
+                </div>
+                {fieldErrors.identifier && (
+                  <p className="text-[11px] text-[#C5281B] mt-1">{fieldErrors.identifier}</p>
+                )}
+              </div>
+
+              {/* Password Field */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] font-mono uppercase text-[#6E6D67]">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-[10px] text-[#8F8E87] hover:text-[#141413] cursor-pointer flex items-center gap-1"
+                  >
+                    {showPassword ? (
+                      <>
+                        <EyeOff className="w-3 h-3" />
+                        <span>Hide</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-3 h-3" />
+                        <span>Show password</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-[#8F8E87]">
+                    <Lock className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: undefined }));
+                    }}
+                    placeholder="Enter password"
+                    className={`w-full pl-8 pr-9 py-2 bg-[#FFFFFF] border text-xs text-[#141413] placeholder:text-[#8F8E87] rounded-xs focus:outline-none focus:border-[#141413] ${
+                      fieldErrors.password ? 'border-[#C5281B]' : 'border-[#E2DFD8]'
+                    }`}
+                  />
+                </div>
+                {fieldErrors.password && (
+                  <p className="text-[11px] text-[#C5281B] mt-1">{fieldErrors.password}</p>
+                )}
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-accent w-full justify-center !py-2.5 text-xs font-semibold"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Authenticating...</span>
+                  </>
+                ) : (
+                  <span>Sign In</span>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Demo Account Quick-Selection */}
+          <div className="mt-5 pt-3 border-t border-[#EAE7DF]">
+            <div className="flex items-center space-x-1.5 text-[#141413] font-semibold mb-2">
+              <UserCheck className="w-3.5 h-3.5 text-[#D4381D]" />
+              <span className="text-[10px] uppercase tracking-wider font-mono text-[#6E6D67]">
+                Quick Test Accounts
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              {DEMO_ACCOUNTS.map((acc) => (
+                <button
+                  key={acc.user.id}
+                  type="button"
+                  onClick={() => handleFillDemo(acc.username, acc.passwords[0] || 'Inspect@2026', acc.user.role)}
+                  className="text-left p-2 rounded-xs bg-[#FAF9F6] border border-[#E2DFD8] hover:border-[#141413] transition-colors flex items-center justify-between group cursor-pointer"
+                >
+                  <div className="truncate pr-1">
+                    <div className="font-semibold text-[11px] text-[#141413] truncate">{acc.user.full_name}</div>
+                    <div className="text-[9px] text-[#8F8E87] font-mono truncate">
+                      {acc.username} &bull; {acc.user.role === 'SYSTEM_ADMIN' ? 'Admin' : 'Officer'}
+                    </div>
+                  </div>
+                  {copiedAccount === acc.username ? (
+                    <Check className="w-3 h-3 text-[#1B7F43] shrink-0" />
+                  ) : (
+                    <span className="text-[10px] text-[#D4381D] font-mono opacity-0 group-hover:opacity-100 shrink-0">&rarr;</span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Footer Note */}
-        <div className="bg-surface-container-lowest px-6 py-3 text-center text-[11px] text-text-muted border-t border-border-subtle">
-          Official statutory portal strictly for authorized Government of India enforcement officers.
-        </div>
       </div>
     </div>
   );
 };
+
+export default LoginModal;

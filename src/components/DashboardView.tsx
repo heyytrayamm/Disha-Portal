@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { ScannedProduct, ComplianceStats } from '../types/metrology';
 import type { User } from '../types/auth';
 import { getProductCanonicalStatus, normalizeComplianceStatus } from '../services/complianceStatusHelper';
-
 import { resolveImageUrl } from '../services/api';
 
 interface DashboardViewProps {
@@ -17,7 +16,7 @@ interface DashboardViewProps {
 type StatDetailType = 'TOTAL' | 'PASSED' | 'FAILED' | 'REVIEW' | 'SCORE' | null;
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
-  user,
+  user: _user,
   stats: _stats,
   products: initialProducts,
   onSelectProduct,
@@ -27,11 +26,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStat, setSelectedStat] = useState<StatDetailType>(null);
 
-  // 1. ONE SINGLE SOURCE OF TRUTH DATASET (Strictly from real database inspections)
+  // 1. Single source of truth from real database inspections
   const displayProducts = useMemo(() => {
     return initialProducts || [];
   }, [initialProducts]);
-
 
   // Close modal on Escape key press
   useEffect(() => {
@@ -46,7 +44,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedStat]);
 
-  // 2. Filter the SAME single dataset into categorized lists using unified canonical status
+  // 2. Filter categorized products
   const passedProducts = useMemo(
     () => displayProducts.filter(p => getProductCanonicalStatus(p) === 'PASS'),
     [displayProducts]
@@ -62,15 +60,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     [displayProducts]
   );
 
-  // 3. Derived single-source-of-truth statistics
-  // Invariant strictly maintained: productsChecked === passed + failed + reviewRequired
+  // 3. Derived single-source statistics
   const derivedStats = useMemo(() => {
     const productsChecked = displayProducts.length;
     const passed = passedProducts.length;
     const failed = failedProducts.length;
     const reviewRequired = reviewProducts.length;
 
-    // Average score calculated directly from the same inspected products
     const averageScore = productsChecked > 0
       ? Math.round(
           displayProducts.reduce((sum, p) => sum + (typeof p.overallScore === 'number' ? p.overallScore : 0), 0) /
@@ -114,29 +110,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       : getProductCanonicalStatus(item);
     switch (normalized) {
       case 'PASS':
-        return (
-          <span className="inline-flex items-center gap-xs px-2 py-1 rounded-full bg-status-pass/10 text-status-pass font-label-sm text-label-sm font-semibold">
-            <span className="material-symbols-outlined text-[14px]">check_circle</span> PASS
-          </span>
-        );
+        return <span className="badge-pass">PASS</span>;
       case 'FAIL':
-        return (
-          <span className="inline-flex items-center gap-xs px-2 py-1 rounded-full bg-status-fail/10 text-status-fail font-label-sm text-label-sm font-semibold">
-            <span className="material-symbols-outlined text-[14px]">error</span> FAIL
-          </span>
-        );
+        return <span className="badge-fail">FAIL</span>;
       case 'REVIEW':
-        return (
-          <span className="inline-flex items-center gap-xs px-2 py-1 rounded-full bg-status-review/10 text-status-review font-label-sm text-label-sm font-semibold">
-            <span className="material-symbols-outlined text-[14px]">warning</span> REVIEW
-          </span>
-        );
+        return <span className="badge-review">REVIEW</span>;
       default:
-        return null;
+        return <span className="badge-neutral">UNASSESSED</span>;
     }
   };
 
-  // 4. Modal lists derived from the EXACT SAME filtered arrays
+  // Modal data
   const getModalProducts = () => {
     switch (selectedStat) {
       case 'TOTAL':
@@ -152,46 +136,40 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
   };
 
-  // 5. Modal titles and badges derived from the EXACT SAME numbers
   const getModalTitle = () => {
     switch (selectedStat) {
       case 'TOTAL':
         return {
           title: 'Products Checked',
-          subtitle: `All ${productsChecked} verified packaging labels in this inspection cycle`,
-          icon: 'inventory_2',
+          subtitle: `All ${productsChecked} verified packaging labels in this cycle`,
           badge: `${productsChecked} Total`
         };
       case 'PASSED':
         return {
-          title: 'Compliant / Passed Products',
-          subtitle: `${passed} labels satisfying all mandatory legal declarations`,
-          icon: 'check_circle',
-          badge: `${passed} Compliant`
+          title: 'Compliant Labels',
+          subtitle: `${passed} packages complying with all mandatory declarations`,
+          badge: `${passed} Passed`
         };
       case 'FAILED':
         return {
-          title: 'Non-Compliant / Failed Products',
-          subtitle: `${failed} labels with critical or major declaration infractions`,
-          icon: 'error',
+          title: 'Non-Compliant Infractions',
+          subtitle: `${failed} packages with statutory non-compliance`,
           badge: `${failed} Failed`
         };
       case 'REVIEW':
         return {
-          title: 'Review Required Products',
-          subtitle: `${reviewRequired} labels requiring manual verification or OCR re-check`,
-          icon: 'warning',
+          title: 'Review Required',
+          subtitle: `${reviewRequired} packages needing manual officer verification`,
           badge: `${reviewRequired} Pending`
         };
       case 'SCORE':
         return {
-          title: 'Average Compliance Score & Analytics',
-          subtitle: `National compliance benchmark: ${averageScore}/100 based on ${productsChecked} inspected units`,
-          icon: 'analytics',
+          title: 'Average Compliance Score',
+          subtitle: `National statutory benchmark: ${averageScore}/100 across ${productsChecked} inspections`,
           badge: `${averageScore}% Avg`
         };
       default:
-        return { title: '', subtitle: '', icon: '', badge: '' };
+        return { title: '', subtitle: '', badge: '' };
     }
   };
 
@@ -199,380 +177,379 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const modalProducts = getModalProducts();
 
   return (
-    <>
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-xl gap-md">
-        <div>
-          <h2 className="font-headline-xl text-headline-xl text-primary font-bold mb-xs">
-            Product Label Compliance Dashboard
-          </h2>
-          <p className="font-body-lg text-body-lg text-text-muted max-w-2xl">
-            {user ? (
-              <span>
-                Active Officer: <strong className="text-text-main font-semibold">{user.full_name}</strong> &bull; {user.role === 'SYSTEM_ADMIN' ? 'System Administrator' : 'Enforcement / Inspection Officer'} &bull; Real-time statutory packaging compliance monitoring.
-              </span>
-            ) : (
-              'Verify product labels against applicable regulatory requirements in seconds.'
-            )}
-          </p>
-        </div>
-        <div className="flex gap-md">
-          <button
-            onClick={onOpenScanner}
-            className="bg-white border border-border-subtle text-primary-container px-md py-sm rounded-lg font-body-md text-body-md hover:bg-surface-container-low transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.05)] flex items-center gap-xs cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[18px]">upload_file</span>
-            Upload Label Image
-          </button>
-          <button
-            onClick={onOpenScanner}
-            className="bg-primary-container text-on-primary px-md py-sm rounded-lg font-body-md text-body-md hover:bg-primary transition-colors flex items-center gap-xs shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            Scan New Product
-          </button>
-        </div>
+    <div className="space-y-8 animate-fade-in">
+      
+      {/* ═══ 1. Top Section / Heading ═══ */}
+      <div className="border-b border-[#E2DFD8] pb-6">
+        <span className="section-tag">FIELD INSPECTION</span>
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#141413] mt-1">
+          Inspect. Verify. Record.
+        </h1>
+        <p className="text-xs sm:text-sm text-[#6E6D67] mt-1.5 max-w-2xl leading-relaxed">
+          Legal Metrology packaging declaration verification system under Rule 6 of the Legal Metrology (Packaged Commodities) Rules, 2011 and FSSAI standards.
+        </p>
       </div>
 
-      {/* Stats Grid - Clickable Cards using ONE Single Source of Truth */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-md mb-xl">
+      {/* ═══ 2. Large Inspection Workspace ═══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* 1. Products Checked */}
-        <div 
-          onClick={() => setSelectedStat('TOTAL')}
-          className="bg-surface-container-lowest border border-border-subtle rounded-lg p-md cursor-pointer hover:border-primary hover:shadow-md hover:-translate-y-0.5 transition-all group select-none relative"
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && setSelectedStat('TOTAL')}
-        >
-          <div className="flex items-center justify-between mb-xs">
-            <p className="font-label-md text-label-md text-text-muted uppercase tracking-wider group-hover:text-primary transition-colors">Products Checked</p>
-            <span className="material-symbols-outlined text-[16px] text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
-          </div>
-          <p className="font-headline-lg text-headline-lg text-text-main font-semibold">{productsChecked.toLocaleString()}</p>
-        </div>
-
-        {/* 2. Passed */}
-        <div 
-          onClick={() => setSelectedStat('PASSED')}
-          className="bg-surface-container-lowest border border-border-subtle rounded-lg p-md cursor-pointer hover:border-status-pass hover:shadow-md hover:-translate-y-0.5 transition-all group select-none relative"
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && setSelectedStat('PASSED')}
-        >
-          <div className="flex items-center justify-between mb-xs">
-            <p className="font-label-md text-label-md text-text-muted uppercase tracking-wider group-hover:text-status-pass transition-colors">Passed</p>
-            <span className="material-symbols-outlined text-[16px] text-status-pass opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
-          </div>
-          <p className="font-headline-lg text-headline-lg text-status-pass font-semibold">{passed.toLocaleString()}</p>
-        </div>
-
-        {/* 3. Failed */}
-        <div 
-          onClick={() => setSelectedStat('FAILED')}
-          className="bg-surface-container-lowest border border-border-subtle rounded-lg p-md cursor-pointer hover:border-status-fail hover:shadow-md hover:-translate-y-0.5 transition-all group select-none relative"
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && setSelectedStat('FAILED')}
-        >
-          <div className="flex items-center justify-between mb-xs">
-            <p className="font-label-md text-label-md text-text-muted uppercase tracking-wider group-hover:text-status-fail transition-colors">Failed</p>
-            <span className="material-symbols-outlined text-[16px] text-status-fail opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
-          </div>
-          <p className="font-headline-lg text-headline-lg text-status-fail font-semibold">{failed.toLocaleString()}</p>
-        </div>
-
-        {/* 4. Review Required */}
-        <div 
-          onClick={() => setSelectedStat('REVIEW')}
-          className="bg-surface-container-lowest border border-border-subtle rounded-lg p-md cursor-pointer hover:border-status-review hover:shadow-md hover:-translate-y-0.5 transition-all group select-none relative"
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && setSelectedStat('REVIEW')}
-        >
-          <div className="flex items-center justify-between mb-xs">
-            <p className="font-label-md text-label-md text-text-muted uppercase tracking-wider group-hover:text-status-review transition-colors">Review Required</p>
-            <span className="material-symbols-outlined text-[16px] text-status-review opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
-          </div>
-          <p className="font-headline-lg text-headline-lg text-status-review font-semibold">{reviewRequired.toLocaleString()}</p>
-        </div>
-
-        {/* 5. Avg Score */}
-        <div 
-          onClick={() => setSelectedStat('SCORE')}
-          className="bg-surface-container-lowest border border-border-subtle rounded-lg p-md flex items-center justify-between col-span-2 md:col-span-1 cursor-pointer hover:border-primary hover:shadow-md hover:-translate-y-0.5 transition-all group select-none relative"
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && setSelectedStat('SCORE')}
-        >
-          <div>
-            <div className="flex items-center gap-1 mb-xs">
-              <p className="font-label-md text-label-md text-text-muted uppercase tracking-wider group-hover:text-primary transition-colors">Avg Score</p>
-              <span className="material-symbols-outlined text-[14px] text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
+        {/* LEFT: Evidence Viewport */}
+        <div className="lg:col-span-7">
+          <div className="disha-card p-4 sm:p-5 flex flex-col h-full">
+            {/* Technical Header */}
+            <div className="flex items-center justify-between border-b border-[#E2DFD8] pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="tech-tag text-[#D4381D]">PACKAGE / LABEL</span>
+                <span className="text-[#CCC9BF]">&bull;</span>
+                <span className="tech-tag">EVIDENCE VIEWPORT</span>
+              </div>
+              <span className="tech-tag text-[#1B7F43] bg-[#EBF7EE] px-1.5 py-0.5 rounded-xs">
+                OPTICAL / READY
+              </span>
             </div>
-            <p className="font-headline-lg text-headline-lg text-primary-container font-semibold">{averageScore}%</p>
+
+            {/* Evidence Frame Viewport Box */}
+            <div className="evidence-viewport relative w-full aspect-[16/9] min-h-[260px] flex flex-col items-center justify-center p-6 text-center select-none overflow-hidden">
+              {/* Red Corner Brackets */}
+              <div className="corner-bracket corner-bracket-tl" />
+              <div className="corner-bracket corner-bracket-tr" />
+              <div className="corner-bracket corner-bracket-bl" />
+              <div className="corner-bracket corner-bracket-br" />
+
+              {/* Viewport Content Centered Horizontally & Vertically */}
+              <div className="flex flex-col items-center justify-center max-w-[420px] w-full mx-auto px-2 z-10">
+                <div className="w-12 h-12 rounded-full border border-[#D5D2C8] bg-[#FFFFFF] flex items-center justify-center text-[#6E6D67] mb-3 shadow-xs">
+                  <span className="material-symbols-outlined text-[24px]">crop_free</span>
+                </div>
+
+                <p className="text-sm font-semibold text-[#141413]">
+                  Position a package or upload an image to begin
+                </p>
+                <p className="text-xs text-[#6E6D67] max-w-[420px] w-full mt-1.5 leading-relaxed text-center">
+                  Automated optical character recognition will extract all statutory declarations and map against Rule 6 legal checks.
+                </p>
+              </div>
+
+              {/* Viewport Frame Footer Stamp */}
+              <div className="absolute bottom-2.5 left-4 right-4 flex items-center justify-between text-[10px] font-mono text-[#7A7973] pointer-events-none border-t border-[#EAE7DF] pt-1.5">
+                <span>OPTICAL / READY</span>
+                <span>EVIDENCE FRAME 01</span>
+              </div>
+            </div>
+
+            {/* Viewport Action Controls */}
+            <div className="flex items-center gap-3 mt-4 pt-3 border-t border-[#E2DFD8]">
+              <button
+                onClick={onOpenScanner}
+                className="btn-primary flex-1 !py-2"
+              >
+                <span className="material-symbols-outlined text-[16px]">photo_camera</span>
+                <span>Capture Live</span>
+              </button>
+              <button
+                onClick={onOpenScanner}
+                className="btn-secondary flex-1 !py-2"
+              >
+                <span className="material-symbols-outlined text-[16px]">file_upload</span>
+                <span>Upload Image</span>
+              </button>
+            </div>
           </div>
-          <div className="w-12 h-12 rounded-full border-4 border-status-pass flex items-center justify-center group-hover:bg-status-pass/5 transition-colors">
-            <span className="font-label-md text-label-md text-text-main font-bold">{averageScore}</span>
+        </div>
+
+        {/* RIGHT: Start Inspection Panel */}
+        <div className="lg:col-span-5">
+          <div className="disha-card p-5 flex flex-col h-full justify-between">
+            <div>
+              <div className="flex items-center justify-between border-b border-[#E2DFD8] pb-3 mb-4">
+                <span className="tech-tag">INSPECTION PROTOCOL</span>
+                <span className="text-[10px] font-mono text-[#6E6D67]">PCR-2011</span>
+              </div>
+
+              <h3 className="text-base font-bold text-[#141413]">
+                Mandatory Declarations Verification
+              </h3>
+              <p className="text-xs text-[#6E6D67] mt-1 leading-relaxed">
+                Under Section 36 of the Legal Metrology Act, every pre-packaged commodity must comply with eight primary statutory declarations:
+              </p>
+
+              {/* Verification Checklist Preview */}
+              <ul className="mt-4 space-y-2.5 text-xs text-[#2D2C28]">
+                {[
+                  { label: 'Commodity Name & Generic Description', rule: 'Rule 6(1)(a)' },
+                  { label: 'Manufacturer / Packer / Importer Details', rule: 'Rule 6(1)(b)' },
+                  { label: 'Net Quantity (Standard Metric Unit)', rule: 'Rule 6(1)(c)' },
+                  { label: 'Month & Year of Manufacture / Packing', rule: 'Rule 6(1)(d)' },
+                  { label: 'Maximum Retail Price (incl. of all taxes)', rule: 'Rule 6(1)(e)' },
+                  { label: 'Consumer Care Phone & Email Details', rule: 'Rule 6(1)(f)' },
+                ].map((item, idx) => (
+                  <li key={idx} className="flex items-center justify-between py-1 border-b border-[#F2F0E8] last:border-none">
+                    <span className="flex items-center gap-2">
+                      <span className="w-1 h-1 rounded-full bg-[#D4381D]" />
+                      <span>{item.label}</span>
+                    </span>
+                    <span className="font-mono text-[10px] text-[#8F8E87] shrink-0">{item.rule}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-[#E2DFD8]">
+              <button
+                onClick={onOpenScanner}
+                className="btn-accent w-full !py-2.5 justify-center text-xs font-semibold"
+              >
+                <span className="material-symbols-outlined text-[18px]">play_circle</span>
+                <span>Initiate Inspection Scan</span>
+              </button>
+            </div>
           </div>
         </div>
 
       </div>
 
-      {/* Recent Inspections Table */}
-      <div className="bg-surface-container-lowest border border-border-subtle rounded-lg overflow-hidden shadow-xs">
-        <div className="p-md border-b border-border-subtle bg-surface flex flex-col sm:flex-row justify-between items-start sm:items-center gap-sm">
-          <h3 className="font-headline-md text-headline-md text-text-main font-semibold">Recent Inspections</h3>
-          <div className="flex items-center gap-md">
-            <div className="flex items-center gap-sm bg-surface-container-lowest border border-border-subtle rounded-lg px-sm py-xs focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition-all">
-              <span className="material-symbols-outlined text-text-muted text-[18px]">search</span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="border-none bg-transparent outline-none font-body-md text-body-md text-text-main placeholder:text-text-muted w-40"
-                placeholder="Search..."
-              />
+      {/* ═══ 3. Statistics: Clean Horizontal Layout ═══ */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="section-tag">METRICS / BENCHMARK</span>
+          <span className="text-[11px] font-mono text-[#8F8E87]">RECORDED AUDITS: {productsChecked}</span>
+        </div>
+
+        <div className="disha-card grid grid-cols-2 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-[#E2DFD8] overflow-hidden">
+          {/* 1. Today / Total */}
+          <div
+            onClick={() => setSelectedStat('TOTAL')}
+            className="p-4 hover:bg-[#FAF9F6] transition-colors cursor-pointer group"
+          >
+            <span className="tech-tag group-hover:text-[#141413]">TOTAL CHECKED</span>
+            <div className="text-2xl sm:text-3xl font-bold text-[#141413] mt-1 font-mono">
+              {productsChecked}
             </div>
-            <button 
-              onClick={() => setSelectedStat('TOTAL')}
-              className="text-primary font-label-md text-label-md hover:underline flex items-center gap-xs cursor-pointer font-semibold"
-            >
-              View All <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-            </button>
+            <p className="text-[11px] text-[#8F8E87] mt-0.5">inspected units</p>
+          </div>
+
+          {/* 2. Pass */}
+          <div
+            onClick={() => setSelectedStat('PASSED')}
+            className="p-4 hover:bg-[#FAF9F6] transition-colors cursor-pointer group"
+          >
+            <span className="tech-tag group-hover:text-[#1B7F43]">PASS</span>
+            <div className="text-2xl sm:text-3xl font-bold text-[#1B7F43] mt-1 font-mono">
+              {passed}
+            </div>
+            <p className="text-[11px] text-[#8F8E87] mt-0.5">compliant packages</p>
+          </div>
+
+          {/* 3. Review */}
+          <div
+            onClick={() => setSelectedStat('REVIEW')}
+            className="p-4 hover:bg-[#FAF9F6] transition-colors cursor-pointer group"
+          >
+            <span className="tech-tag group-hover:text-[#B45309]">REVIEW REQUIRED</span>
+            <div className="text-2xl sm:text-3xl font-bold text-[#B45309] mt-1 font-mono">
+              {reviewRequired}
+            </div>
+            <p className="text-[11px] text-[#8F8E87] mt-0.5">manual verification</p>
+          </div>
+
+          {/* 4. Fail */}
+          <div
+            onClick={() => setSelectedStat('FAILED')}
+            className="p-4 hover:bg-[#FAF9F6] transition-colors cursor-pointer group"
+          >
+            <span className="tech-tag group-hover:text-[#C5281B]">FAIL / INFRACTIONS</span>
+            <div className="text-2xl sm:text-3xl font-bold text-[#C5281B] mt-1 font-mono">
+              {failed}
+            </div>
+            <p className="text-[11px] text-[#8F8E87] mt-0.5">statutory violations</p>
+          </div>
+
+          {/* 5. Avg Score */}
+          <div
+            onClick={() => setSelectedStat('SCORE')}
+            className="p-4 hover:bg-[#FAF9F6] transition-colors cursor-pointer group col-span-2 md:col-span-1"
+          >
+            <span className="tech-tag group-hover:text-[#D4381D]">AVG COMPLIANCE</span>
+            <div className="text-2xl sm:text-3xl font-bold text-[#D4381D] mt-1 font-mono">
+              {averageScore}%
+            </div>
+            <p className="text-[11px] text-[#8F8E87] mt-0.5">statutory index</p>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-surface-container-low border-b border-border-subtle">
-                <th className="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase">Product</th>
-                <th className="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase hidden md:table-cell">Manufacturer</th>
-                <th className="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase hidden lg:table-cell">Origin</th>
-                <th className="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase hidden lg:table-cell">MRP</th>
-                <th className="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase hidden md:table-cell">Date</th>
-                <th className="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase">Score</th>
-                <th className="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase">Status</th>
-                <th className="py-sm px-md font-label-md text-label-md text-text-muted font-semibold uppercase text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-subtle">
-              {filteredProducts.map((product) => {
-                const mrpField = product.extractedFields?.find(f => f.category === 'MAXIMUM_RETAIL_PRICE');
-                const mrpValue = mrpField?.parsedValue ? `₹${mrpField.parsedValue}` : '—';
-                const scanDate = product.scannedAt 
-                  ? new Date(product.scannedAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
-                  : '—';
+      </div>
 
-                return (
-                  <tr
-                    key={product.id}
-                    className="hover:bg-surface-container-low transition-colors h-[48px] cursor-pointer"
-                    onClick={() => handleProductClick(product)}
-                  >
-                    <td className="py-sm px-md font-body-md text-body-md text-text-main font-medium">{product.productName}</td>
-                    <td className="py-sm px-md font-body-md text-body-md text-text-muted hidden md:table-cell">{product.manufacturerName}</td>
-                    <td className="py-sm px-md font-body-md text-body-md text-text-muted hidden lg:table-cell">{product.countryOfOrigin || 'India'}</td>
-                    <td className="py-sm px-md font-body-md text-body-md text-text-muted hidden lg:table-cell">{mrpValue}</td>
-                    <td className="py-sm px-md font-body-md text-body-md text-text-muted hidden md:table-cell">{scanDate}</td>
-                    <td className="py-sm px-md font-body-md text-body-md font-semibold text-text-main">{product.overallScore}</td>
-                    <td className="py-sm px-md">{getStatusBadge(product)}</td>
-                    <td className="py-sm px-md text-right">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
-                        className="text-text-muted hover:text-primary transition-colors cursor-pointer p-1 rounded hover:bg-surface-container-high"
+      {/* ═══ 4. Recent Inspections Table ═══ */}
+      <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div>
+            <span className="section-tag">RECORDS / RECENT</span>
+            <h2 className="text-base font-bold text-[#141413]">Recent Inspections Register</h2>
+          </div>
+
+          {/* Search Filter */}
+          <div className="relative w-full sm:w-64">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8F8E87] text-[16px]">
+              search
+            </span>
+            <input
+              type="text"
+              placeholder="Filter product, brand, ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#FFFFFF] border border-[#E2DFD8] rounded-xs text-[#141413] placeholder:text-[#8F8E87] focus:outline-none focus:border-[#141413]"
+            />
+          </div>
+        </div>
+
+        <div className="disha-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="disha-table">
+              <thead>
+                <tr>
+                  <th className="disha-th w-28">Audit ID</th>
+                  <th className="disha-th">Product Description</th>
+                  <th className="disha-th">Manufacturer</th>
+                  <th className="disha-th w-24 text-center">Score</th>
+                  <th className="disha-th w-24">Status</th>
+                  <th className="disha-th w-20 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.slice(0, 8).map((p) => {
+                    const status = getProductCanonicalStatus(p);
+                    return (
+                      <tr
+                        key={p.id}
+                        onClick={() => handleProductClick(p)}
+                        className="disha-tr cursor-pointer"
                       >
-                        <span className="material-symbols-outlined text-[20px]">chevron_right</span>
-                      </button>
+                        <td className="disha-td font-mono font-semibold text-xs text-[#D4381D]">
+                          {p.id}
+                        </td>
+                        <td className="disha-td">
+                          <div className="font-semibold text-[#141413] line-clamp-1">{p.productName}</div>
+                          <div className="text-[11px] text-[#6E6D67]">{p.category || 'Packaged Commodity'}</div>
+                        </td>
+                        <td className="disha-td text-[#6E6D67]">
+                          <span className="line-clamp-1">{p.manufacturerName || 'N/A'}</span>
+                        </td>
+                        <td className="disha-td text-center font-mono font-bold">
+                          <span className={
+                            status === 'PASS' ? 'text-[#1B7F43]' :
+                            status === 'REVIEW' ? 'text-[#B45309]' : 'text-[#C5281B]'
+                          }>
+                            {p.overallScore ?? '—'}
+                          </span>
+                        </td>
+                        <td className="disha-td">
+                          {getStatusBadge(p)}
+                        </td>
+                        <td className="disha-td text-right">
+                          <span className="text-xs text-[#D4381D] font-medium hover:underline inline-flex items-center gap-0.5">
+                            View <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-xs text-[#8F8E87]">
+                      {searchQuery ? 'No inspections match your search query.' : 'No recent inspections recorded yet.'}
                     </td>
                   </tr>
-                );
-              })}
-              {filteredProducts.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="py-xl text-center text-text-muted font-body-md text-body-md">
-                    No inspections found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* ═══ STATISTIC DETAILS EXPANDED MODAL ═══ */}
+      {/* ═══ Metric Drilldown Modal ═══ */}
       {selectedStat && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto w-screen h-screen left-0 top-0"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setSelectedStat(null);
-          }}
-        >
-          <div 
-            className="bg-surface-container-lowest border border-border-subtle rounded-2xl shadow-2xl overflow-hidden text-text-main my-auto flex flex-col relative z-50 animate-in fade-in duration-200"
-            style={{
-              width: 'min(92vw, 750px)',
-              maxWidth: '750px',
-              maxHeight: '85vh',
-              boxSizing: 'border-box'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
+          <div className="bg-[#FFFFFF] border border-[#E2DFD8] rounded-xs shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-surface border-b border-border-subtle flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-container text-on-primary flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[22px]">{modalMeta.icon}</span>
+            <div className="px-5 py-4 border-b border-[#E2DFD8] flex items-center justify-between bg-[#FAF9F6]">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="section-tag">{modalMeta.badge}</span>
+                  <span className="text-[#CCC9BF]">&bull;</span>
+                  <span className="tech-tag">INSPECTION ARCHIVE</span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-headline-md text-base sm:text-lg font-bold text-primary">
-                      {modalMeta.title}
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-secondary-container text-on-secondary-container">
-                      {modalMeta.badge}
-                    </span>
-                  </div>
-                  <p className="font-label-sm text-xs text-text-muted mt-0.5">
-                    {modalMeta.subtitle}
-                  </p>
-                </div>
+                <h3 className="text-base font-bold text-[#141413] mt-0.5">{modalMeta.title}</h3>
+                <p className="text-xs text-[#6E6D67]">{modalMeta.subtitle}</p>
               </div>
-              <button 
-                type="button"
-                onClick={() => setSelectedStat(null)} 
-                className="text-text-muted hover:text-text-main p-1.5 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer"
+              <button
+                onClick={() => setSelectedStat(null)}
+                className="p-1.5 text-[#6E6D67] hover:text-[#141413] rounded-xs cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-6 overflow-y-auto flex-1 space-y-4">
-              {selectedStat === 'SCORE' ? (
-                /* Analytics Score Breakdown View */
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="p-4 rounded-xl bg-surface-container-low border border-border-subtle text-center">
-                      <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Average Score</p>
-                      <h4 className="font-headline-xl text-3xl font-bold text-primary mt-1">{averageScore}%</h4>
-                      <p className="text-[11px] text-status-pass font-medium mt-0.5">Inspected Benchmark</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-status-pass/10 border border-status-pass/20 text-center">
-                      <p className="text-xs text-status-pass uppercase tracking-wider font-semibold">Compliance Rate</p>
-                      <h4 className="font-headline-xl text-3xl font-bold text-status-pass mt-1">
-                        {productsChecked > 0 ? Math.round((passed / productsChecked) * 100) : 0}%
-                      </h4>
-                      <p className="text-[11px] text-text-muted font-medium mt-0.5">{passed} of {productsChecked} units</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-error-container/40 border border-error/20 text-center">
-                      <p className="text-xs text-error uppercase tracking-wider font-semibold">Infraction Rate</p>
-                      <h4 className="font-headline-xl text-3xl font-bold text-error mt-1">
-                        {productsChecked > 0 ? Math.round((failed / productsChecked) * 100) : 0}%
-                      </h4>
-                      <p className="text-[11px] text-text-muted font-medium mt-0.5">{failed} of {productsChecked} units</p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-surface-container-lowest border border-border-subtle space-y-3">
-                    <h5 className="font-headline-md text-sm font-bold text-text-main">Quality Rating Distribution</h5>
-                    <div className="space-y-2">
-                      <div>
-                        <div className="flex justify-between text-xs font-medium mb-1">
-                          <span>Passed Labels (Score 80-100)</span>
-                          <span className="text-status-pass font-bold">{passed} products</span>
-                        </div>
-                        <div className="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
-                          <div className="h-full bg-status-pass rounded-full" style={{ width: `${productsChecked > 0 ? (passed / productsChecked) * 100 : 0}%` }} />
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between text-xs font-medium mb-1">
-                          <span>Review Required (Score 60-79)</span>
-                          <span className="text-status-review font-bold">{reviewRequired} products</span>
-                        </div>
-                        <div className="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
-                          <div className="h-full bg-status-review rounded-full" style={{ width: `${productsChecked > 0 ? (reviewRequired / productsChecked) * 100 : 0}%` }} />
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between text-xs font-medium mb-1">
-                          <span>Failed Labels (Score &lt; 60)</span>
-                          <span className="text-status-fail font-bold">{failed} products</span>
-                        </div>
-                        <div className="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
-                          <div className="h-full bg-status-fail rounded-full" style={{ width: `${productsChecked > 0 ? (failed / productsChecked) * 100 : 0}%` }} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Products List for Selected Metric */
-                <div className="divide-y divide-border-subtle border border-border-subtle rounded-xl overflow-hidden">
-                  {modalProducts.length > 0 ? (
-                    modalProducts.map((p) => (
-                      <div
-                        key={p.id}
-                        onClick={() => handleProductClick(p)}
-                        className="p-3.5 bg-surface-container-lowest hover:bg-surface-container-low transition-colors flex items-center justify-between gap-3 cursor-pointer group"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <img 
-                            src={resolveImageUrl(p.sourceImageUrl || p.imageUrl) || p.preprocessingStages?.original || ''} 
-                            alt={p.productName} 
+            {/* Modal Body */}
+            <div className="p-5 overflow-y-auto flex-1 divide-y divide-[#ECE9E2]">
+              {modalProducts.length > 0 ? (
+                modalProducts.map((p) => (
+                  <div
+                    key={p.id}
+                    onClick={() => handleProductClick(p)}
+                    className="py-3 flex items-center justify-between gap-4 hover:bg-[#FAF9F6] px-2 -mx-2 rounded-xs cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-11 bg-[#F4F2EB] border border-[#E2DFD8] rounded-xs overflow-hidden shrink-0 flex items-center justify-center">
+                        {p.sourceImageUrl || p.imageUrl ? (
+                          <img
+                            src={resolveImageUrl(p.sourceImageUrl || p.imageUrl)}
+                            alt={p.productName}
+                            className="w-full h-full object-cover"
                             onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 24 24" fill="none" stroke="%2394a3b8" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
+                              (e.currentTarget as HTMLElement).style.display = 'none';
                             }}
-                            className="w-10 h-12 object-cover rounded border border-border-subtle shrink-0" 
                           />
-                          <div className="min-w-0">
-                            <p className="font-body-md text-sm font-semibold text-text-main truncate group-hover:text-primary transition-colors">
-                              {p.productName}
-                            </p>
-                            <p className="text-xs text-text-muted truncate mt-0.5">
-                              {p.manufacturerName} • {p.category}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 shrink-0">
-                          <div className="text-right hidden sm:block">
-                            <span className="text-xs font-bold text-text-main">{p.overallScore}</span>
-                            <span className="text-[10px] text-text-muted">/100</span>
-                          </div>
-                          {getStatusBadge(p)}
-                          <span className="material-symbols-outlined text-text-muted text-[18px] group-hover:text-primary transition-colors">
-                            chevron_right
-                          </span>
-                        </div>
+                        ) : (
+                          <span className="material-symbols-outlined text-[#8F8E87] text-[18px]">inventory_2</span>
+                        )}
                       </div>
-                    ))
-                  ) : (
-                    <div className="p-8 text-center text-text-muted text-xs">
-                      No products found in this category.
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-[#141413] truncate">{p.productName}</p>
+                        <p className="text-[11px] text-[#6E6D67] truncate mt-0.5">
+                          {p.manufacturerName} &bull; <span className="font-mono text-[#D4381D]">{p.id}</span>
+                        </p>
+                      </div>
                     </div>
-                  )}
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="font-mono text-xs font-bold text-[#141413]">{p.overallScore}/100</span>
+                      {getStatusBadge(p)}
+                      <span className="material-symbols-outlined text-[#8F8E87] text-[16px]">chevron_right</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-8 text-center text-xs text-[#8F8E87]">
+                  No products in this statutory category.
                 </div>
               )}
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-3 bg-surface border-t border-border-subtle flex justify-end">
+            <div className="px-5 py-3 border-t border-[#E2DFD8] bg-[#FAF9F6] flex justify-end">
               <button
-                type="button"
                 onClick={() => setSelectedStat(null)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-surface-container-low hover:bg-surface-container-high text-text-main border border-border-subtle transition-colors cursor-pointer"
+                className="btn-secondary text-xs"
               >
                 Close
               </button>
             </div>
-
           </div>
         </div>
       )}
-    </>
+
+    </div>
   );
 };
+
+export default DashboardView;

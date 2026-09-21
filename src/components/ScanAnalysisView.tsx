@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { ScannedProduct } from '../types/metrology';
-import { getProductCanonicalStatus, getComplianceRemarks, getStatusTheme } from '../services/complianceStatusHelper';
+import { getProductCanonicalStatus, getComplianceRemarks } from '../services/complianceStatusHelper';
 import { resolveImageUrl } from '../services/api';
 
 interface ScanAnalysisViewProps {
@@ -25,9 +25,6 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
   const [modalImageFailed, setModalImageFailed] = useState(false);
 
   // Compute the optimal source image URL following the priority order:
-  // 1. product.sourceImageUrl (client-side preview / data URL / blob)
-  // 2. resolveImageUrl(product.imageUrl) (browser-accessible backend URL)
-  // 3. product.preprocessingStages?.original (base64 JPEG data URI from OpenCV)
   const sourceImageSrc = useMemo(() => {
     if (!product) return '';
     const candidates = [
@@ -65,42 +62,132 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
   void _onBack;
   void _onUpdateProduct;
 
+  // ════════════════════════════════════════════════════════════════
+  // 1. EMPTY / STANDBY STATE: LIVE SCAN PAGE (Section 9)
+  // ════════════════════════════════════════════════════════════════
   if (!product) {
     return (
-      <div className="bg-surface-container-lowest border border-border-subtle rounded-lg p-xl text-center text-text-muted space-y-md my-xl shadow-xs">
-        <div className="w-16 h-16 rounded-full bg-primary-container text-on-primary mx-auto flex items-center justify-center">
-          <span className="material-symbols-outlined text-[32px]">document_scanner</span>
+      <div className="space-y-6 animate-fade-in">
+        {/* Top Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E2DFD8] pb-5">
+          <div>
+            <span className="section-tag">CAPTURE / LIVE SCAN</span>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#141413] mt-1">
+              Live scan
+            </h1>
+            <p className="text-xs sm:text-sm text-[#6E6D67] mt-1">
+              Real-time optical label capture and regulatory declaration verification.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xs bg-[#FAF9F6] border border-[#E2DFD8] text-xs font-mono text-[#6E6D67] self-start sm:self-auto">
+            <span className="w-2 h-2 rounded-full bg-[#B45309] animate-pulse" />
+            <span className="font-semibold text-[#141413]">CAPTURE STANDBY</span>
+          </div>
         </div>
-        <h3 className="font-headline-md text-headline-md font-bold text-primary">No Label Scan Selected</h3>
-        <p className="font-body-md text-body-md max-w-md mx-auto">
-          Upload or scan a product packaging label to run OpenCV preprocessing, OCR text extraction, and rule-based legal metrology verification.
-        </p>
-        <button
-          onClick={onOpenScanner}
-          className="bg-primary-container text-on-primary font-label-md text-label-md px-lg py-sm rounded-lg hover:bg-primary transition-colors font-semibold shadow-xs cursor-pointer"
-        >
-          Scan Product Label Now
-        </button>
+
+        {/* Large Camera / Evidence Viewport */}
+        <div className="disha-card p-5">
+          <div className="evidence-viewport relative w-full aspect-[16/7] min-h-[300px] flex flex-col items-center justify-center p-6 text-center select-none overflow-hidden bg-[#FBFBF9]">
+            {/* Corner Markers */}
+            <div className="corner-bracket corner-bracket-tl" />
+            <div className="corner-bracket corner-bracket-tr" />
+            <div className="corner-bracket corner-bracket-bl" />
+            <div className="corner-bracket corner-bracket-br" />
+
+            {/* Centered Camera Content */}
+            <div className="flex flex-col items-center justify-center max-w-[480px] w-full mx-auto px-4 z-10">
+              <div className="w-14 h-14 rounded-full border border-[#D5D2C8] bg-[#FFFFFF] flex items-center justify-center text-[#D4381D] mb-3 shadow-xs">
+                <span className="material-symbols-outlined text-[28px]">photo_camera</span>
+              </div>
+
+              <h3 className="text-base font-bold text-[#141413]">
+                Optical Capture Standby
+              </h3>
+              <p className="text-xs text-[#6E6D67] max-w-[460px] w-full mt-1.5 leading-relaxed text-center">
+                Place the pre-packaged commodity within the optical viewfinder or upload a high-resolution label image to initiate automated metrology verification.
+              </p>
+            </div>
+
+            {/* Viewport Technical Metadata at Bottom */}
+            <div className="absolute bottom-2.5 left-4 right-4 flex flex-wrap items-center justify-between gap-3 text-[10px] font-mono text-[#7A7973] border-t border-[#EAE7DF] pt-2 pointer-events-none">
+              <div className="flex items-center gap-4">
+                <span>PACKAGE DETECTION: <strong className="text-[#141413]">WAITING</strong></span>
+                <span>IMAGE QUALITY: <strong className="text-[#141413]">—</strong></span>
+              </div>
+              <div>
+                <span>MODE: <strong className="text-[#D4381D]">LEGAL DECLARATIONS</strong></span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons Below Viewport */}
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-4 pt-4 border-t border-[#E2DFD8]">
+            <button
+              onClick={onOpenScanner}
+              className="btn-accent px-5 !py-2.5 text-xs font-semibold"
+            >
+              <span className="material-symbols-outlined text-[18px]">photo_camera</span>
+              <span>CAPTURE</span>
+            </button>
+            <button
+              onClick={onOpenScanner}
+              className="btn-secondary px-5 !py-2.5 text-xs font-semibold"
+            >
+              <span className="material-symbols-outlined text-[18px]">file_upload</span>
+              <span>UPLOAD IMAGE</span>
+            </button>
+            <button
+              onClick={onOpenScanner}
+              className="btn-secondary px-4 !py-2.5 text-xs text-[#6E6D67]"
+            >
+              <span className="material-symbols-outlined text-[16px]">refresh</span>
+              <span>CLEAR</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Scan Pipeline Progression */}
+        <div className="disha-card p-5">
+          <div className="flex items-center justify-between border-b border-[#E2DFD8] pb-3 mb-4">
+            <span className="tech-tag">STATUTORY SCAN PIPELINE</span>
+            <span className="text-[10px] font-mono text-[#6E6D67]">STANDBY</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+            {[
+              { step: '01', title: 'Captured', desc: 'Optical feed acquisition' },
+              { step: '02', title: 'Reading', desc: 'OpenCV perspective correction' },
+              { step: '03', title: 'Extracting', desc: 'Multi-engine OCR extraction' },
+              { step: '04', title: 'Validating', desc: 'Rule 6 statutory checks' },
+              { step: '05', title: 'Complete', desc: 'Compliance verdict & report' },
+            ].map((s, idx) => (
+              <div key={idx} className="p-3 bg-[#FAF9F6] border border-[#E2DFD8] rounded-xs text-left">
+                <span className="text-[10px] font-mono font-bold text-[#D4381D]">{s.step}</span>
+                <h4 className="text-xs font-bold text-[#141413] mt-0.5">{s.title}</h4>
+                <p className="text-[10px] text-[#8F8E87] mt-0.5">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
-  // 1. Single Central Status Determination
+  // ════════════════════════════════════════════════════════════════
+  // 2. INSPECTION RESULT / COMPLIANCE PAGE (Sections 13 & 14)
+  // ════════════════════════════════════════════════════════════════
   const status = getProductCanonicalStatus(product);
   const isPass = status === 'PASS';
   const isReview = status === 'REVIEW';
   const isFail = status === 'FAIL';
   const isUnableToAssess = status === 'UNABLE_TO_ASSESS';
-  const theme = getStatusTheme(status);
 
-  // 2. Rule Check Categorization
   const ruleChecks = product.ruleChecks || [];
   const failedChecks = ruleChecks.filter(r => r.status === 'FAIL');
   const warningChecks = ruleChecks.filter(r => r.status === 'WARNING');
   const passedChecks = ruleChecks.filter(r => r.status === 'PASS');
   const totalChecks = ruleChecks.length;
 
-  // 3. Dynamic Remarks & Observations
   const remarksData = getComplianceRemarks(product.overallScore, status, ruleChecks);
 
   const scanDate = product.scannedAt
@@ -110,17 +197,8 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
     : '';
 
   const scoreVal = typeof product.overallScore === 'number' ? product.overallScore : null;
-  const scoreColor = isPass ? 'text-status-pass' : isFail ? 'text-error' : isUnableToAssess ? 'text-slate-600' : 'text-status-review';
-  const scoreStrokeColor = isPass ? '#10b981' : isFail ? '#ba1a1a' : isUnableToAssess ? '#94a3b8' : '#f59e0b';
-  const scoreLabel = scoreVal !== null
-    ? (scoreVal >= 80 ? 'Excellent' : scoreVal >= 60 ? 'Needs Attention' : 'Non-Compliant')
-    : 'Unable to Assess';
-  const circumference = 2 * Math.PI * 45;
-  const scoreOffset = scoreVal !== null
-    ? circumference - (scoreVal / 100) * circumference
-    : circumference;
 
-  // Quality breakdown scores (from extracted fields confidence)
+  // Quality metrics
   const avgConfidence = product.extractedFields?.length > 0
     ? Math.round(product.extractedFields.reduce((sum, f) => sum + f.confidence, 0) / product.extractedFields.length)
     : 0;
@@ -137,103 +215,72 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
 
     return (
       <div 
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto w-screen h-screen left-0 top-0"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto"
         onClick={(e) => {
           if (e.target === e.currentTarget) setIsCropModalOpen(false);
         }}
       >
         <div 
-          className="bg-surface-container-lowest border border-border-subtle rounded-2xl shadow-2xl overflow-hidden text-text-main my-auto flex flex-col relative z-50 animate-in fade-in duration-200"
-          style={{
-            width: 'min(92vw, 720px)',
-            maxWidth: '720px',
-            maxHeight: '90vh',
-            boxSizing: 'border-box'
-          }}
+          className="bg-[#FFFFFF] border border-[#E2DFD8] rounded-xs shadow-2xl overflow-hidden text-[#141413] my-auto flex flex-col relative z-50 animate-slide-down w-full max-w-2xl max-h-[90vh]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Modal Header */}
-          <div className="px-6 py-4 bg-surface border-b border-border-subtle flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary-container text-on-primary flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[20px]">crop_free</span>
+          <div className="px-5 py-3.5 border-b border-[#E2DFD8] flex items-center justify-between bg-[#FAF9F6]">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="section-tag">EVIDENCE VERIFICATION</span>
+                <span className="text-[#CCC9BF]">&bull;</span>
+                <span className="tech-tag">SOURCE CROP</span>
               </div>
-              <div>
-                <h3 className="font-headline-md text-sm sm:text-base font-bold text-primary">
-                  Source Crop Inspection
-                </h3>
-                <p className="font-label-sm text-xs text-text-muted">
-                  {product.productName} ({product.brandName})
-                </p>
-              </div>
+              <h3 className="text-sm sm:text-base font-bold text-[#141413] mt-0.5">
+                {product.productName}
+              </h3>
             </div>
             <button 
               type="button"
               onClick={() => setIsCropModalOpen(false)} 
-              className="text-text-muted hover:text-text-main p-1.5 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer"
+              className="p-1.5 text-[#6E6D67] hover:text-[#141413] rounded-xs cursor-pointer"
             >
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
 
           {/* Modal Body */}
-          <div className="p-6 flex flex-col items-center justify-center overflow-y-auto max-h-[calc(90vh-140px)]">
+          <div className="p-5 flex flex-col items-center justify-center overflow-y-auto max-h-[calc(90vh-120px)] bg-[#F7F6F2]">
             {sourceImageSrc && !modalImageFailed ? (
-              <div className="w-full flex flex-col items-center gap-4">
-                <div className="relative border border-border-subtle rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center w-full max-h-[480px]">
+              <div className="w-full flex flex-col items-center gap-3">
+                <div className="relative border border-[#D5D2C8] bg-[#FFFFFF] rounded-xs p-2 max-h-[500px] overflow-hidden flex items-center justify-center">
                   <img 
                     src={sourceImageSrc} 
                     alt="High-resolution Source Crop" 
                     onError={() => setModalImageFailed(true)}
-                    className="w-full max-h-[480px] object-contain rounded-lg shadow-inner"
+                    className="max-h-[460px] object-contain rounded-xs"
                   />
                 </div>
-                
-                <div className="w-full bg-surface-container-low border border-border-subtle rounded-xl p-3.5 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2 text-text-muted">
-                    <span className="material-symbols-outlined text-primary text-[18px]">verified</span>
-                    <span>Preprocessed via OpenCV & OCR pipeline</span>
-                  </div>
-                  <span className="font-mono text-text-main font-semibold">
-                    Status: {status} ({product.overallScore !== null ? `${product.overallScore}/100` : 'N/A'})
-                  </span>
+                <div className="w-full flex items-center justify-between text-[11px] font-mono text-[#6E6D67] bg-[#FFFFFF] border border-[#E2DFD8] p-2.5 rounded-xs">
+                  <span>AUDIT ID: {product.id}</span>
+                  <span>STATUS: {status} ({scoreVal !== null ? `${scoreVal}/100` : 'N/A'})</span>
                 </div>
               </div>
             ) : (
-              <div className="py-12 px-6 text-center text-text-muted flex flex-col items-center">
-                <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-3">
-                  <span className="material-symbols-outlined text-[24px]">image_not_supported</span>
-                </div>
-                <p className="font-semibold text-text-main text-sm">Source image unavailable</p>
-                <p className="text-xs text-text-muted mt-1 max-w-xs">
-                  The original source packaging label could not be loaded.
-                </p>
-                {onOpenScanner && (
-                  <button
-                    onClick={() => {
-                      setIsCropModalOpen(false);
-                      onOpenScanner();
-                    }}
-                    className="mt-3 px-3 py-1.5 text-xs text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-colors flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">upload</span> Re-upload image
-                  </button>
-                )}
+              <div className="py-12 text-center text-[#6E6D67]">
+                <span className="material-symbols-outlined text-[32px] text-[#A8A59C]">image_not_supported</span>
+                <p className="text-sm font-semibold text-[#141413] mt-2">Source Image Unavailable</p>
+                <p className="text-xs text-[#8F8E87] mt-1">The uploaded label crop could not be rendered from the cache.</p>
               </div>
             )}
           </div>
 
           {/* Modal Footer */}
-          <div className="px-6 py-3 bg-surface border-t border-border-subtle flex justify-end">
+          <div className="px-5 py-3 border-t border-[#E2DFD8] bg-[#FAF9F6] flex justify-end">
             <button
               type="button"
               onClick={() => setIsCropModalOpen(false)}
-              className="px-4 py-2 rounded-lg text-xs font-semibold bg-surface-container-low hover:bg-surface-container-high text-text-main border border-border-subtle transition-colors cursor-pointer"
+              className="btn-secondary text-xs"
             >
               Close
             </button>
           </div>
-
         </div>
       </div>
     );
@@ -243,502 +290,370 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
     <>
       {renderCropModal()}
 
-      {/* Header Section */}
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-sm border-b border-border-subtle mb-lg gap-sm">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="font-headline-lg text-headline-lg text-primary font-bold">
-              Scan Report: #{product.id}
-            </h1>
-            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${theme.badgeBg} ${theme.badgeText} border ${theme.badgeBorder}`}>
-              <span className="material-symbols-outlined text-[14px]">{theme.icon}</span>
-              {status}
-            </span>
-          </div>
-          <p className="font-body-md text-body-md text-text-muted mt-xs">
-            {product.productName} ({product.brandName}) &bull; Completed {scanDate}
-          </p>
-        </div>
-        <div className="flex items-center gap-sm">
-          {onOpenScanner && (
-            <button
-              onClick={onOpenScanner}
-              className="flex items-center gap-xs px-md py-sm border border-border-subtle bg-surface-container-lowest text-text-main rounded-lg font-label-md text-label-md hover:bg-surface-container-low transition-colors shadow-sm cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px]">photo_camera</span>
-              Scan Another
-            </button>
-          )}
-          <button
-            onClick={() => onDownloadPDF?.(product)}
-            className="flex items-center gap-xs px-md py-sm border border-primary/20 bg-primary-container text-on-primary rounded-lg font-label-md text-label-md hover:bg-primary transition-colors shadow-sm cursor-pointer font-semibold"
-          >
-            <span className="material-symbols-outlined text-[18px]">download</span>
-            Export Official Report
-          </button>
-        </div>
-      </header>
-
-      {/* Bento Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+      <div className="space-y-6 animate-fade-in">
         
-        {/* Main Content (8 cols on lg) */}
-        <div className="lg:col-span-8 flex flex-col gap-lg">
-          
-          {/* 1. Verdict Banner */}
-          <div className={`bg-surface-container-lowest border rounded-xl p-lg flex flex-col sm:flex-row items-center gap-lg relative overflow-hidden shadow-xs ${
-            isPass ? 'border-status-pass/30' : isFail ? 'border-status-fail/30' : 'border-status-review/30'
-          }`}>
-            <div className={`absolute inset-0 opacity-5 pointer-events-none ${
-              isPass ? 'bg-status-pass' : isFail ? 'bg-status-fail' : 'bg-status-review'
-            }`} />
-            
-            <div className={`h-20 w-20 rounded-full flex items-center justify-center shrink-0 border-4 ${
-              isPass 
-                ? 'bg-status-pass/10 text-status-pass border-status-pass/20' 
-                : isFail 
-                ? 'bg-status-fail/10 text-status-fail border-status-fail/20' 
-                : isUnableToAssess
-                ? 'bg-slate-500/10 text-slate-600 border-slate-500/20'
-                : 'bg-status-review/10 text-status-review border-status-review/20'
-            }`}>
-              <span className="material-symbols-outlined text-[44px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                {theme.icon}
-              </span>
-            </div>
-
-            <div className="flex-1 text-center sm:text-left z-10">
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1">
-                <h2 className={`font-headline-xl text-headline-xl font-bold tracking-tight ${
-                  isPass ? 'text-status-pass' : isFail ? 'text-status-fail' : isUnableToAssess ? 'text-slate-700' : 'text-status-review'
-                }`}>
-                  {isPass ? 'PASS' : isReview ? 'REVIEW REQUIRED' : isUnableToAssess ? 'UNABLE TO ASSESS' : 'FAIL'}
-                </h2>
-                
-                <span className="font-mono text-sm px-2.5 py-0.5 rounded-md bg-surface-container-high text-text-main font-semibold">
-                  Score: {scoreVal !== null ? `${scoreVal}/100` : '-- / N/A'}
-                </span>
-
-                {isPass && failedChecks.length > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-status-pass/10 text-status-pass border border-status-pass/20">
-                    <span className="material-symbols-outlined text-[13px]">info</span>
-                    Attention Required
-                  </span>
-                )}
-                {isFail && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-status-fail/10 text-status-fail border border-status-fail/20">
-                    <span className="material-symbols-outlined text-[13px]">error</span>
-                    Action Required
-                  </span>
-                )}
-                {isReview && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-status-review/10 text-status-review border border-status-review/20">
-                    <span className="material-symbols-outlined text-[13px]">warning</span>
-                    Inspection Pending
-                  </span>
-                )}
-                {isUnableToAssess && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
-                    <span className="material-symbols-outlined text-[13px]">help</span>
-                    Non-Packaging Image
-                  </span>
-                )}
-              </div>
-
-              <p className="font-body-md text-body-md text-text-main">
-                {isUnableToAssess ? (
-                  product.message || 'The uploaded image does not appear to contain a readable packaged commodity label. Please upload a clear product-label image.'
-                ) : isPass ? (
-                  failedChecks.length === 0
-                    ? 'Product label satisfies all applicable mandatory checks according to Legal Metrology (Packaged Commodities) Rules, 2011.'
-                    : `Product meets the overall statutory compliance threshold (${scoreVal}/100). Minor deficiencies observed; please review the compliance observations below.`
-                ) : isReview ? (
-                  `Product compliance score (${scoreVal}/100) falls in the review threshold (60–79). Manual inspection or verification is required before clearance.`
-                ) : (
-                  `Product does not meet mandatory statutory requirements with a score of ${scoreVal}/100 (below 60). Immediate enforcement or corrective action is required.`
-                )}
-              </p>
-            </div>
+        {/* ═══ Header Section ═══ */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#E2DFD8] pb-5">
+          <div>
+            <span className="section-tag">COMPLIANCE ASSESSMENT</span>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#141413] mt-1">
+              {product.productName}
+            </h1>
+            <p className="text-xs font-mono text-[#6E6D67] mt-1">
+              INSPECTION ID: <strong className="text-[#D4381D]">{product.id}</strong> &bull; {scanDate} &bull; BRAND: {product.brandName}
+            </p>
           </div>
 
-          {/* 2. Remarks / Compliance Observations Section (Requirement 3 & 4) */}
-          <div className="bg-surface-container-lowest border border-border-subtle rounded-xl flex flex-col shadow-xs overflow-hidden">
-            <div className="px-md py-sm border-b border-border-subtle bg-surface-container flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-[20px]">assignment</span>
-                <h3 className="font-headline-md text-headline-md text-primary font-semibold">
-                  Compliance Observations & Inspector Remarks
-                </h3>
-              </div>
-              <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                isPass ? 'bg-status-pass/10 text-status-pass' : isFail ? 'bg-status-fail/10 text-status-fail' : 'bg-status-review/10 text-status-review'
-              }`}>
-                {remarksData.headline}
-              </span>
-            </div>
-
-            <div className="p-md space-y-md">
-              {/* Primary Callout Box */}
-              <div className={`p-md rounded-xl border flex items-start gap-3 ${
-                isPass 
-                  ? 'bg-status-pass/5 border-status-pass/20 text-text-main' 
-                  : isFail 
-                  ? 'bg-status-fail/5 border-status-fail/20 text-text-main' 
-                  : 'bg-status-review/5 border-status-review/20 text-text-main'
-              }`}>
-                <span className={`material-symbols-outlined shrink-0 mt-0.5 text-[22px] ${
-                  isPass ? 'text-status-pass' : isFail ? 'text-status-fail' : 'text-status-review'
-                }`}>
-                  {isPass ? 'check_circle' : isFail ? 'error' : 'warning'}
-                </span>
-                <div className="flex-1 text-sm">
-                  <p className="font-semibold text-text-main mb-1">
-                    Compliance Remark
-                  </p>
-                  <p className="font-body-md leading-relaxed text-text-main">
-                    {remarksData.summary}
-                  </p>
-                </div>
-              </div>
-
-              {/* Detailed Observations List (if any specific items flagged) */}
-              {remarksData.observations.length > 0 && (
-                <div className="space-y-sm pt-xs">
-                  <h4 className="font-label-md text-label-md text-text-muted uppercase tracking-wider font-semibold">
-                    Specific Findings & Checklist Notes
-                  </h4>
-                  <div className="grid grid-cols-1 gap-sm">
-                    {remarksData.observations.map((obs, idx) => (
-                      <div key={idx} className="flex items-start gap-2.5 p-sm rounded-lg bg-surface-container-low border border-border-subtle text-xs">
-                        <span className={`material-symbols-outlined text-[16px] shrink-0 mt-0.5 ${
-                          isPass ? 'text-status-review' : isFail ? 'text-status-fail' : 'text-status-review'
-                        }`}>
-                          arrow_right
-                        </span>
-                        <span className="text-text-main">{obs}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Actionable Guidance (if applicable) */}
-              {remarksData.actionItems.length > 0 && (
-                <div className="space-y-sm pt-xs">
-                  <h4 className="font-label-md text-label-md text-text-muted uppercase tracking-wider font-semibold">
-                    Recommended Remedial Action
-                  </h4>
-                  <div className="grid grid-cols-1 gap-sm">
-                    {remarksData.actionItems.map((action, idx) => (
-                      <div key={idx} className="flex items-start gap-2.5 p-sm rounded-lg bg-surface-container-low border border-border-subtle text-xs">
-                        <span className="material-symbols-outlined text-[16px] text-primary shrink-0 mt-0.5">
-                          build_circle
-                        </span>
-                        <span className="text-text-main font-medium">{action}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 3. Detailed Compliance Field Verification Report (Requirement 2) */}
-          <div className="bg-surface-container-lowest border border-border-subtle rounded-xl flex flex-col shadow-xs overflow-hidden">
-            <div className="px-md py-sm border-b border-border-subtle bg-surface-container flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="font-headline-md text-headline-md text-primary font-semibold">
-                  Compliance Verification Report
-                </h3>
-                <p className="font-label-sm text-xs text-text-muted">
-                  Detailed statutory declaration checklist under Legal Metrology (Packaged Commodities) Rules, 2011
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-status-pass/10 text-status-pass">
-                  ✅ {passedChecks.length} Passed
-                </span>
-                {failedChecks.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-status-fail/10 text-status-fail">
-                    ❌ {failedChecks.length} Failed
-                  </span>
-                )}
-                {warningChecks.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-status-review/10 text-status-review">
-                    ⚠️ {warningChecks.length} Warnings
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[840px] text-left border-collapse table-auto">
-                <thead>
-                  <tr className="border-b border-border-subtle bg-surface-container-low">
-                    <th className="px-md py-sm font-label-md text-label-md text-text-muted uppercase w-[90px] min-w-[90px]">Status</th>
-                    <th className="px-md py-sm font-label-md text-label-md text-text-muted uppercase w-[240px] min-w-[220px]">Requirement / Field</th>
-                    <th className="px-md py-sm font-label-md text-label-md text-text-muted uppercase min-w-[220px] max-w-[280px]">Detected Value</th>
-                    <th className="px-md py-sm font-label-md text-label-md text-text-muted uppercase w-[120px] min-w-[120px]">Rule (LMPC)</th>
-                    <th className="px-md py-sm font-label-md text-label-md text-text-muted uppercase min-w-[160px] max-w-[200px]">Remarks</th>
-                  </tr>
-                </thead>
-                <tbody className="font-body-md text-body-md text-text-main divide-y divide-border-subtle">
-                  {ruleChecks.map((rule) => {
-                    const isCheckPass = rule.status === 'PASS';
-                    const isCheckFail = rule.status === 'FAIL';
-
-                    const rawDetected = rule.observedValue 
-                      ?? (rule as any).detectedValue 
-                      ?? product.extractedFields?.find(f => f.category === rule.category)?.rawValue;
-                    const detectedValueText = rawDetected && String(rawDetected).trim() ? String(rawDetected).trim() : 'MISSING';
-                    const isMissingValue = detectedValueText === 'MISSING' || detectedValueText === 'Missing / Unreadable';
-
-                    return (
-                      <tr key={rule.ruleId} className="hover:bg-surface-container-low transition-colors">
-                        {/* Status Icon Column */}
-                        <td className="px-md py-sm w-[90px] min-w-[90px] align-top pt-3">
-                          {isCheckPass ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-status-pass/10 text-status-pass" title="Compliant declaration">
-                              <span className="material-symbols-outlined text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                              PASS
-                            </span>
-                          ) : isCheckFail ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-status-fail/10 text-status-fail" title="Statutory violation">
-                              <span className="material-symbols-outlined text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
-                              FAIL
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-status-review/10 text-status-review" title="Requires review">
-                              <span className="material-symbols-outlined text-[15px]">warning</span>
-                              WARN
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Field Name Column */}
-                        <td className="px-md py-sm w-[240px] min-w-[220px] align-top pt-3">
-                          <p className="font-semibold text-text-main text-sm leading-snug">
-                            {rule.title}
-                          </p>
-                          <p className="text-xs text-text-muted mt-0.5 font-normal">
-                            {rule.category.replace(/_/g, ' ')}
-                          </p>
-                        </td>
-
-                        {/* Detected Value Column */}
-                        <td className="px-md py-sm min-w-[220px] max-w-[280px] align-top pt-2.5">
-                          <div 
-                            className={`text-xs font-mono px-2.5 py-1.5 rounded w-full whitespace-normal break-words leading-relaxed border ${
-                              isMissingValue || isCheckFail 
-                                ? 'bg-error-container/30 text-error border-error-container/50' 
-                                : 'bg-surface-container-high text-text-main border-border-subtle'
-                            }`}
-                            style={{
-                              minWidth: '180px',
-                              maxWidth: '280px',
-                              whiteSpace: 'normal',
-                              overflowWrap: 'anywhere',
-                              wordBreak: 'break-word',
-                            }}
-                          >
-                            {detectedValueText}
-                          </div>
-                        </td>
-
-                        {/* Statutory Rule Column */}
-                        <td className="px-md py-sm w-[120px] min-w-[120px] align-top text-xs text-text-muted font-medium pt-3">
-                          {rule.ruleNumber}
-                        </td>
-
-                        {/* Explanation / Remarks Column */}
-                        <td className="px-md py-sm min-w-[160px] max-w-[200px] align-top text-xs pt-3">
-                          {isCheckPass ? (
-                            <span className="text-status-pass font-medium">Present & Compliant</span>
-                          ) : isCheckFail ? (
-                            <span className="text-status-fail font-medium" title={rule.description}>
-                              {rule.title.includes('Missing') ? 'Missing' : 'Non-compliant'}
-                            </span>
-                          ) : (
-                            <span className="text-status-review font-medium">Attention Required</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-
-                  {ruleChecks.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="py-8 text-center text-text-muted text-sm">
-                        No individual rule evaluations recorded for this scan.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Sidebar (4 cols on lg) */}
-        <div className="lg:col-span-4 flex flex-col gap-lg">
-          
-          {/* Quality Score Ring */}
-          <div className="bg-surface-container-lowest border border-border-subtle rounded-xl p-md shadow-xs flex flex-col items-center">
-            <div className="w-full flex items-center justify-between mb-md border-b border-border-subtle pb-sm">
-              <h3 className="font-headline-md text-headline-md text-primary font-semibold">
-                Compliance Score
-              </h3>
-              <span className="font-label-sm text-xs text-text-muted">
-                {totalChecks} Checks Evaluated
-              </span>
-            </div>
-
-            <div className="relative w-40 h-40 flex items-center justify-center my-md">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" strokeWidth="8" />
-                <circle 
-                  cx="50" 
-                  cy="50" 
-                  r="45" 
-                  fill="none" 
-                  stroke={scoreStrokeColor} 
-                  strokeWidth="8"
-                  strokeDasharray={circumference} 
-                  strokeDashoffset={scoreOffset}
-                  strokeLinecap="round" 
-                  className="transition-all duration-700" 
-                />
-              </svg>
-              <div className="absolute flex flex-col items-center justify-center text-center">
-                <span className={`font-headline-xl text-headline-xl ${scoreColor} leading-none font-bold`}>
-                  {scoreVal !== null ? scoreVal : '--'}
-                </span>
-                <span className="font-label-sm text-label-sm text-text-muted uppercase tracking-wider mt-1">
-                  {scoreVal !== null ? 'out of 100' : 'N/A'}
-                </span>
-              </div>
-            </div>
-
-            <div className={`${
-              isPass ? 'bg-status-pass/10 text-status-pass' : isFail ? 'bg-error-container text-error' : isUnableToAssess ? 'bg-slate-100 text-slate-700' : 'bg-status-review/10 text-status-review'
-            } font-label-md text-label-md px-3 py-1 rounded-full mb-lg font-semibold`}>
-              {scoreLabel}
-            </div>
-
-            {/* Breakdown Bars */}
-            <div className="w-full flex flex-col gap-sm">
-              <div className="flex flex-col gap-xs">
-                <div className="flex justify-between font-label-md text-label-md">
-                  <span className="text-text-main text-xs">Completeness</span>
-                  <span className="text-primary font-bold text-xs">{completenessScore}%</span>
-                </div>
-                <div className="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
-                  <div className="bg-primary h-full rounded-full transition-all duration-500" style={{ width: `${completenessScore}%` }} />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-xs mt-sm">
-                <div className="flex justify-between font-label-md text-label-md">
-                  <span className="text-text-main text-xs">Readability (OCR)</span>
-                  <span className="text-primary font-bold text-xs">{avgConfidence}%</span>
-                </div>
-                <div className="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
-                  <div className="bg-primary h-full rounded-full transition-all duration-500" style={{ width: `${avgConfidence}%` }} />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-xs mt-sm">
-                <div className="flex justify-between font-label-md text-label-md">
-                  <span className="text-text-main text-xs">Contrast Ratio</span>
-                  <span className="text-primary font-bold text-xs">{contrastScore}%</span>
-                </div>
-                <div className="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
-                  <div className="bg-primary h-full rounded-full transition-all duration-500" style={{ width: `${contrastScore}%` }} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Source Image Crop Card */}
-          <div className="bg-surface-container-lowest border border-border-subtle rounded-xl p-md shadow-xs flex flex-col gap-sm">
-            <h4 className="font-label-md text-label-md text-text-muted uppercase tracking-wider font-semibold">
-              Source Packaging Label
-            </h4>
-            <div className="h-48 overflow-hidden relative group rounded-lg border border-border-subtle">
-              {sourceImageSrc && !imageLoadFailed ? (
-                <>
-                  <img 
-                    src={sourceImageSrc} 
-                    alt="Source Packaging Label" 
-                    onError={() => setImageLoadFailed(true)}
-                    className="w-full h-full object-cover rounded-lg" 
-                  />
-                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button 
-                      onClick={() => setIsCropModalOpen(true)}
-                      className="bg-surface-container-lowest text-primary font-label-md text-label-md px-4 py-2 rounded-lg border border-border-subtle shadow-sm flex items-center gap-2 cursor-pointer hover:bg-surface-container-low transition-colors"
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>visibility</span> View Source Crop
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div 
-                  onClick={onOpenScanner}
-                  className="w-full h-full bg-surface-container-high flex items-center justify-center border border-dashed border-border-subtle rounded-lg cursor-pointer hover:bg-surface-container transition-colors"
-                  title={onOpenScanner ? "Click to scan or re-upload image" : "Source image unavailable"}
-                >
-                  <span className="font-label-md text-label-md text-text-muted flex flex-col items-center gap-2">
-                    <span className="material-symbols-outlined text-[28px] text-text-muted">image_not_supported</span>
-                    <span className="font-medium text-xs">Source image unavailable</span>
-                    {onOpenScanner && (
-                      <span className="text-[11px] text-primary hover:underline flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px]">upload</span> Re-upload image
-                      </span>
-                    )}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Action Controls */}
-          <div className="bg-surface-container-lowest border border-border-subtle rounded-xl p-md shadow-xs flex flex-col gap-sm">
-            <h4 className="font-label-md text-label-md text-text-muted uppercase tracking-wider font-semibold mb-xs">
-              Actions & Enforcement
-            </h4>
-            <button
-              onClick={() => onDownloadPDF?.(product)}
-              className="w-full flex items-center justify-center gap-2 px-md py-sm rounded-lg border border-border-subtle bg-surface hover:bg-surface-container-low text-text-main text-xs font-semibold transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
-              Download PDF Report
-            </button>
-            {onOpenNoticeModal && (
-              <button
-                onClick={onOpenNoticeModal}
-                className={`w-full flex items-center justify-center gap-2 px-md py-sm rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                  isFail 
-                    ? 'bg-status-fail text-white hover:bg-red-700' 
-                    : isReview 
-                    ? 'bg-status-review text-white hover:bg-amber-600' 
-                    : 'bg-surface border border-border-subtle text-text-main hover:bg-surface-container-low'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[18px]">gavel</span>
-                {isFail ? 'Issue Statutory Notice' : isReview ? 'Manual Verification / Notice' : 'Issue Label Advisory'}
-              </button>
-            )}
+          <div className="flex items-center gap-2.5">
             {onOpenScanner && (
               <button
                 onClick={onOpenScanner}
-                className="w-full flex items-center justify-center gap-2 px-md py-sm rounded-lg border border-border-subtle bg-surface hover:bg-surface-container-low text-text-muted hover:text-text-main text-xs font-semibold transition-colors cursor-pointer"
+                className="btn-secondary text-xs"
               >
-                <span className="material-symbols-outlined text-[18px]">refresh</span>
-                Discard & Retake Scan
+                <span className="material-symbols-outlined text-[16px]">photo_camera</span>
+                <span>Scan Another</span>
               </button>
             )}
+            <button
+              onClick={() => onDownloadPDF?.(product)}
+              className="btn-primary text-xs font-semibold"
+            >
+              <span className="material-symbols-outlined text-[16px]">download</span>
+              <span>Export PDF Report</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ═══ Evidence-First Progression Breadcrumb ═══ */}
+        <div className="disha-card px-4 py-2.5 bg-[#FAF9F6] flex items-center justify-between overflow-x-auto text-[11px] font-mono text-[#6E6D67]">
+          <span className="flex items-center gap-1.5 text-[#141413] font-semibold">
+            <span className="material-symbols-outlined text-[16px] text-[#D4381D]">image</span>
+            <span>01 IMAGE</span>
+          </span>
+          <span className="text-[#CCC9BF]">&rarr;</span>
+          <span className="flex items-center gap-1.5 text-[#141413] font-semibold">
+            <span className="material-symbols-outlined text-[16px] text-[#D4381D]">crop_free</span>
+            <span>02 EVIDENCE</span>
+          </span>
+          <span className="text-[#CCC9BF]">&rarr;</span>
+          <span className="flex items-center gap-1.5 text-[#141413] font-semibold">
+            <span className="material-symbols-outlined text-[16px] text-[#D4381D]">text_fields</span>
+            <span>03 FIELD</span>
+          </span>
+          <span className="text-[#CCC9BF]">&rarr;</span>
+          <span className="flex items-center gap-1.5 text-[#141413] font-semibold">
+            <span className="material-symbols-outlined text-[16px] text-[#D4381D]">gavel</span>
+            <span>04 RULE</span>
+          </span>
+          <span className="text-[#CCC9BF]">&rarr;</span>
+          <span className="flex items-center gap-1.5 text-[#141413] font-semibold">
+            <span className="material-symbols-outlined text-[16px] text-[#D4381D]">verified</span>
+            <span>05 RESULT</span>
+          </span>
+        </div>
+
+        {/* ═══ Overall Result Banner ═══ */}
+        <div className="disha-card p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[#E2DFD8]">
+            <div className="flex items-center gap-4">
+              <div className={`w-14 h-14 rounded-xs border flex items-center justify-center font-bold text-xl font-mono ${
+                isPass ? 'bg-[#EBF7EE] text-[#1B7F43] border-[#BBE5C7]' :
+                isFail ? 'bg-[#FDE8E6] text-[#C5281B] border-[#F8B4AF]' :
+                isUnableToAssess ? 'bg-[#EFECE6] text-[#5A5955] border-[#DCD8CE]' :
+                'bg-[#FEF3C7] text-[#B45309] border-[#FDE68A]'
+              }`}>
+                {scoreVal !== null ? `${scoreVal}` : '—'}
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold tracking-tight text-[#141413]">
+                    {isPass ? 'COMPLIANT (PASS)' : isReview ? 'REVIEW REQUIRED' : isUnableToAssess ? 'UNABLE TO ASSESS' : 'STATUTORY NON-COMPLIANT (FAIL)'}
+                  </h2>
+                  <span className={`px-2 py-0.5 rounded-xs text-[10px] font-mono font-bold uppercase tracking-wider ${
+                    isPass ? 'bg-[#EBF7EE] text-[#1B7F43] border border-[#BBE5C7]' :
+                    isFail ? 'bg-[#FDE8E6] text-[#C5281B] border border-[#F8B4AF]' :
+                    'bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]'
+                  }`}>
+                    {status}
+                  </span>
+                </div>
+                <p className="text-xs text-[#6E6D67] mt-0.5">
+                  {totalChecks} statutory declarations evaluated under Rule 6 of Packaged Commodities Rules, 2011.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono text-[#8F8E87]">
+                PASSED: <strong className="text-[#1B7F43]">{passedChecks.length}</strong> &bull; FAILED: <strong className="text-[#C5281B]">{failedChecks.length}</strong>
+              </span>
+            </div>
+          </div>
+
+          {/* Legal Summary / Inspector Remarks */}
+          <div className="mt-4 pt-1">
+            <div className="p-3.5 bg-[#FAF9F6] border border-[#E2DFD8] rounded-xs text-xs">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="material-symbols-outlined text-[#D4381D] text-[16px]">gavel</span>
+                <span className="font-bold text-[#141413] uppercase tracking-wider text-[10px]">
+                  {remarksData.headline}
+                </span>
+              </div>
+              <p className="text-[#2D2C28] leading-relaxed">
+                {remarksData.summary}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ═══ Main Two-Column Layout ═══ */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* LEFT: Detailed Field-by-Field Evidence Rows (8 cols) */}
+          <div className="lg:col-span-8 space-y-6">
+            
+            <div className="disha-card overflow-hidden">
+              <div className="p-4 border-b border-[#E2DFD8] flex items-center justify-between bg-[#FAF9F6]">
+                <div>
+                  <h3 className="text-sm font-bold text-[#141413] uppercase tracking-wider">
+                    Statutory Declarations Verification
+                  </h3>
+                  <p className="text-[11px] text-[#6E6D67]">
+                    Field-level optical extraction compared with mandatory statutory rules
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="badge-pass">{passedChecks.length} Passed</span>
+                  {failedChecks.length > 0 && <span className="badge-fail">{failedChecks.length} Failed</span>}
+                  {warningChecks.length > 0 && <span className="badge-review">{warningChecks.length} Warnings</span>}
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="disha-table">
+                  <thead>
+                    <tr>
+                      <th className="disha-th w-20">Status</th>
+                      <th className="disha-th">Requirement / Field</th>
+                      <th className="disha-th">Detected Value</th>
+                      <th className="disha-th w-28">Statutory Rule</th>
+                      <th className="disha-th w-28 text-right">Evidence</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ruleChecks.map((rule) => {
+                      const isCheckPass = rule.status === 'PASS';
+                      const isCheckFail = rule.status === 'FAIL';
+                      const rawDetected = rule.observedValue 
+                        ?? (rule as any).detectedValue 
+                        ?? product.extractedFields?.find(f => f.category === rule.category)?.rawValue;
+                      const detectedValueText = rawDetected && String(rawDetected).trim() ? String(rawDetected).trim() : 'MISSING';
+                      const isMissingValue = detectedValueText === 'MISSING' || detectedValueText === 'Missing / Unreadable';
+
+                      return (
+                        <tr key={rule.ruleId} className="disha-tr">
+                          <td className="disha-td">
+                            {isCheckPass ? (
+                              <span className="badge-pass">PASS</span>
+                            ) : isCheckFail ? (
+                              <span className="badge-fail">FAIL</span>
+                            ) : (
+                              <span className="badge-review">WARN</span>
+                            )}
+                          </td>
+
+                          <td className="disha-td">
+                            <p className="font-semibold text-[#141413] text-xs leading-snug">
+                              {rule.title}
+                            </p>
+                            <p className="text-[10px] text-[#8F8E87] mt-0.5">
+                              {rule.category.replace(/_/g, ' ')}
+                            </p>
+                          </td>
+
+                          <td className="disha-td font-mono text-xs">
+                            <span className={`px-2 py-0.5 rounded-xs inline-block max-w-[240px] truncate ${
+                              isMissingValue || isCheckFail 
+                                ? 'bg-[#FDE8E6] text-[#C5281B] font-semibold' 
+                                : 'bg-[#F4F2EB] text-[#141413]'
+                            }`}>
+                              {detectedValueText}
+                            </span>
+                          </td>
+
+                          <td className="disha-td font-mono text-[11px] text-[#6E6D67]">
+                            {rule.ruleNumber}
+                          </td>
+
+                          <td className="disha-td text-right">
+                            {sourceImageSrc ? (
+                              <button
+                                onClick={() => setIsCropModalOpen(true)}
+                                className="text-[11px] text-[#D4381D] hover:underline font-medium cursor-pointer inline-flex items-center gap-1"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">crop_free</span>
+                                <span>Crop</span>
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-[#A8A59C]">N/A</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                    {ruleChecks.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="p-8 text-center text-xs text-[#8F8E87]">
+                          No individual rule evaluations recorded for this scan.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Observations & Remedial Action List */}
+            {remarksData.observations.length > 0 && (
+              <div className="disha-card p-4 sm:p-5">
+                <span className="section-tag">STATUTORY FINDINGS</span>
+                <h3 className="text-sm font-bold text-[#141413] mt-1 mb-3">
+                  Checklist Observations & Remedial Guidance
+                </h3>
+                <div className="space-y-2">
+                  {remarksData.observations.map((obs, idx) => (
+                    <div key={idx} className="p-3 bg-[#FAF9F6] border border-[#E2DFD8] rounded-xs text-xs flex items-start gap-2.5">
+                      <span className="material-symbols-outlined text-[#D4381D] text-[16px] shrink-0 mt-0.5">
+                        arrow_forward
+                      </span>
+                      <span className="text-[#2D2C28] leading-relaxed">{obs}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+
+          {/* RIGHT: Evidence Packaging Preview & Quality Metrics (4 cols) */}
+          <div className="lg:col-span-4 space-y-6">
+            
+            {/* Source Image Crop Card */}
+            <div className="disha-card p-4">
+              <div className="flex items-center justify-between border-b border-[#E2DFD8] pb-2.5 mb-3">
+                <span className="section-tag">SOURCE PACKAGING</span>
+                <span className="text-[10px] font-mono text-[#8F8E87]">EVIDENCE CROP</span>
+              </div>
+
+              <div className="relative border border-[#D5D2C8] rounded-xs overflow-hidden h-52 bg-[#F9F8F5] flex items-center justify-center group">
+                {sourceImageSrc && !imageLoadFailed ? (
+                  <>
+                    <img 
+                      src={sourceImageSrc} 
+                      alt="Source Label" 
+                      onError={() => setImageLoadFailed(true)}
+                      className="w-full h-full object-cover" 
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button 
+                        onClick={() => setIsCropModalOpen(true)}
+                        className="btn-primary text-xs !py-1.5 !px-3"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">visibility</span>
+                        <span>View Source Crop</span>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div 
+                    onClick={onOpenScanner}
+                    className="p-6 text-center text-[#8F8E87] cursor-pointer hover:bg-[#F2F0E8] transition-colors w-full h-full flex flex-col items-center justify-center"
+                  >
+                    <span className="material-symbols-outlined text-[28px] text-[#A8A59C]">image_not_supported</span>
+                    <p className="text-xs font-semibold text-[#141413] mt-1">Source image unavailable</p>
+                    <p className="text-[11px] text-[#8F8E87] mt-0.5">Click to scan or re-upload</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quality Rating Metrics */}
+            <div className="disha-card p-4">
+              <div className="flex items-center justify-between border-b border-[#E2DFD8] pb-2.5 mb-3">
+                <span className="section-tag">METRICS / CONFIDENCE</span>
+                <span className="text-[10px] font-mono text-[#8F8E87]">OCR INDEX</span>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-[#6E6D67]">Declaration Completeness</span>
+                    <span className="font-mono font-bold text-[#141413]">{completenessScore}%</span>
+                  </div>
+                  <div className="w-full bg-[#EAE7DF] h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-[#141413] h-full" style={{ width: `${completenessScore}%` }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-[#6E6D67]">OCR Optical Confidence</span>
+                    <span className="font-mono font-bold text-[#141413]">{avgConfidence}%</span>
+                  </div>
+                  <div className="w-full bg-[#EAE7DF] h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-[#141413] h-full" style={{ width: `${avgConfidence}%` }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-[#6E6D67]">Contrast & Readability</span>
+                    <span className="font-mono font-bold text-[#141413]">{contrastScore}%</span>
+                  </div>
+                  <div className="w-full bg-[#EAE7DF] h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-[#141413] h-full" style={{ width: `${contrastScore}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions & Enforcement Panel */}
+            <div className="disha-card p-4 space-y-2.5">
+              <div className="flex items-center justify-between border-b border-[#E2DFD8] pb-2.5 mb-1">
+                <span className="section-tag">ENFORCEMENT ACTIONS</span>
+              </div>
+
+              <button
+                onClick={() => onDownloadPDF?.(product)}
+                className="btn-secondary w-full justify-center !py-2 text-xs"
+              >
+                <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+                <span>Download PDF Report</span>
+              </button>
+
+              {onOpenNoticeModal && (isFail || isReview) && (
+                <button
+                  onClick={onOpenNoticeModal}
+                  className="btn-danger w-full justify-center !py-2 text-xs font-semibold"
+                >
+                  <span className="material-symbols-outlined text-[16px]">gavel</span>
+                  <span>Issue Statutory Notice</span>
+                </button>
+              )}
+
+              {onOpenScanner && (
+                <button
+                  onClick={onOpenScanner}
+                  className="btn-secondary w-full justify-center !py-2 text-xs text-[#6E6D67]"
+                >
+                  <span className="material-symbols-outlined text-[16px]">refresh</span>
+                  <span>Discard & Retake Scan</span>
+                </button>
+              )}
+            </div>
+
           </div>
 
         </div>
@@ -747,3 +662,5 @@ export const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
     </>
   );
 };
+
+export default ScanAnalysisView;

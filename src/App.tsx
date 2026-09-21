@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
 import { DashboardView } from './components/DashboardView';
 import { ScanAnalysisView } from './components/ScanAnalysisView';
 import { ScannerModal } from './components/ScannerModal';
 import { RepositoryView } from './components/RepositoryView';
 import { RuleMatrixDocsView } from './components/RuleMatrixDocsView';
+import { ResourcesView } from './components/ResourcesView';
 import { NoticeGeneratorModal } from './components/NoticeGeneratorModal';
 import { LoginModal } from './components/LoginModal';
 import { UserManagementView } from './components/UserManagementView';
@@ -30,7 +32,7 @@ export function App() {
   const [stats, setStats] = useState<ComplianceStats | null>(null);
   const [_loading, setLoading] = useState(true);
 
-  // Synchronize Tab and Active Inspection ID with URL Query Params (Part 10 persistence)
+  // Synchronize Tab and Active Inspection ID with URL Query Params
   const syncNavigation = (tab: ActiveTab, inspectionId?: string | null) => {
     setActiveTab(tab);
     try {
@@ -59,7 +61,6 @@ export function App() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = (urlParams.get('tab') as ActiveTab) || 'dashboard';
-    // Only load a specific inspection if explicitly provided in the URL query string
     const idParam = urlParams.get('id');
 
     if (tabParam) {
@@ -86,7 +87,7 @@ export function App() {
         setProducts(prods);
       }
 
-      // Check if target inspection is specified by ID (survives refresh)
+      // Check if target inspection is specified by ID
       let targetProduct: ScannedProduct | null = null;
       if (idParam) {
         targetProduct = prods.find(p => p.id === idParam || p.inspection_id === idParam) || null;
@@ -109,8 +110,6 @@ export function App() {
           syncNavigation('scan', targetProduct.id);
         }
       } else {
-        // Do NOT automatically select prods[0] for scan page
-        // Scan page shows clean empty state unless an inspection was explicitly chosen or scanned
         setSelectedProduct(null);
       }
     } catch (e) {
@@ -131,13 +130,12 @@ export function App() {
           updated = await ApiService.issueStatutoryNotice(selectedProduct.id, noticeData);
         }
       } catch (_) {
-        // Use the locally computed product from the modal
+        // Fallback to local
       }
       setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
       setSelectedProduct(updated);
       setIsNoticeModalOpen(false);
       
-      // Refresh stats from PostgreSQL
       const freshStats = await ApiService.fetchDashboardStats();
       setStats(freshStats);
     } catch (err) {
@@ -164,14 +162,13 @@ export function App() {
       // Fallback client side generator
     }
 
-    // Client-side reportlab fallback
     generateInspectionPdfReport(product);
   };
 
   return (
-    <div className="min-h-screen bg-background text-text-main font-body-md flex flex-col">
+    <div className="min-h-screen bg-[#F7F6F2] text-[#141413] font-sans flex flex-col selection:bg-[#D4381D]/15 selection:text-[#D4381D]">
       
-      {/* Header & Side Navigation */}
+      {/* Top Header Navigation */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={(t) => syncNavigation(t, t === 'scan' ? selectedProduct?.id : null)}
@@ -185,10 +182,8 @@ export function App() {
         }}
       />
 
-      {/* Main Content Area (Offset by 64 units on desktop for SideNav) */}
-      <main className="md:ml-64 flex-1 flex flex-col min-h-screen bg-background">
-        <div className="px-margin-desktop py-lg max-w-[1280px] mx-auto w-full flex-1">
-        
+      {/* Main Centered Workspace */}
+      <main className="flex-1 disha-workspace py-8 w-full">
         {activeTab === 'dashboard' && (
           <DashboardView
             user={user}
@@ -230,17 +225,25 @@ export function App() {
           <RuleMatrixDocsView />
         )}
 
+        {activeTab === 'resources' && (
+          <ResourcesView />
+        )}
+
         {activeTab === 'users' && (
           <UserManagementView
             currentUser={user}
             onOpenLogin={() => setIsLoginModalOpen(true)}
           />
         )}
-
-        </div>
       </main>
 
-      {/* Modals */}
+      {/* Official Government Portal Footer */}
+      <Footer 
+        activeTab={activeTab} 
+        setActiveTab={(t) => syncNavigation(t, null)} 
+      />
+
+      {/* ═══ Modals ═══ */}
       <ScannerModal
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
@@ -250,13 +253,9 @@ export function App() {
             return;
           }
           const uniqueId = product.id || product.inspection_id;
-          // Clear previous selected product first
           setSelectedProduct(null);
-          // Set selectedProduct to the NEW product
           setSelectedProduct(product);
-          // Add/update that product in products by its unique ID
           setProducts(prev => [product, ...prev.filter(p => p.id !== uniqueId && p.inspection_id !== uniqueId)]);
-          // Navigate to ?tab=scan&id=<NEW_ID>
           syncNavigation('scan', uniqueId);
           setIsScannerOpen(false);
           try {

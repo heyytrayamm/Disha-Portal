@@ -111,4 +111,4 @@ export interface ComplianceStats {
 }
 
 
-export type ActiveTab = 'dashboard' | 'scan' | 'repository' | 'rules' | 'users';
+export type ActiveTab = 'dashboard' | 'scan' | 'repository' | 'rules' | 'resources' | 'users';

@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import type { ScannedProduct } from '../types/metrology';
 import type { User } from '../types/auth';
 import { generateInspectionPdfReport } from '../services/pdfReportService';
-
 import { getProductCanonicalStatus } from '../services/complianceStatusHelper';
 
 interface RepositoryViewProps {
@@ -11,53 +10,52 @@ interface RepositoryViewProps {
   onSelectProduct: (product: ScannedProduct) => void;
 }
 
-type DateFilterType = '30_DAYS' | '7_DAYS' | 'QUARTER' | 'YTD' | 'ALL';
+type DateFilterType = 'ALL' | '7_DAYS' | '30_DAYS' | 'QUARTER' | 'YTD';
+type StatusFilterType = 'ALL' | 'COMPLIANT' | 'REVIEW' | 'NON_COMPLIANT' | 'UNABLE_TO_ASSESS';
 
 export const RepositoryView: React.FC<RepositoryViewProps> = ({
   products: initialProducts,
-  user,
+  user: _user,
   onSelectProduct
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'COMPLIANT' | 'NON_COMPLIANT'>('ALL');
-  const [dateFilter, setDateFilter] = useState<DateFilterType>('30_DAYS');
+  const [statusFilter, setStatusFilter] = useState<StatusFilterType>('ALL');
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('ALL');
+  const [selectedInspector, setSelectedInspector] = useState<string>('ALL');
 
-  // 1. ONE SINGLE SOURCE OF TRUTH DATASET (Derived from real PostgreSQL inspection records)
+  // 1. Single source of truth from real database inspections
   const displayProducts = useMemo(() => {
     return initialProducts || [];
   }, [initialProducts]);
 
+  // Unique inspectors list from real data
+  const inspectorsList = useMemo(() => {
+    const set = new Set<string>();
+    displayProducts.forEach(p => {
+      if (p.inspectorName && p.inspectorName.trim()) {
+        set.add(p.inspectorName.trim());
+      }
+    });
+    return Array.from(set);
+  }, [displayProducts]);
 
-  // 2. DYNAMIC REAL-TIME STATISTICS (Identical to Dashboard metrics)
+  // 2. Real-time statistics
   const stats = useMemo(() => {
     const total = displayProducts.length;
-    const passedProducts = displayProducts.filter(p => getProductCanonicalStatus(p) === 'PASS');
-    const failedProducts = displayProducts.filter(p => getProductCanonicalStatus(p) === 'FAIL');
-    const reviewProducts = displayProducts.filter(p => getProductCanonicalStatus(p) === 'REVIEW');
-
-    const passed = passedProducts.length;
-    const failed = failedProducts.length;
-    const pendingReview = reviewProducts.length;
-
-    const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : '0.0';
+    const passed = displayProducts.filter(p => getProductCanonicalStatus(p) === 'PASS').length;
+    const failed = displayProducts.filter(p => getProductCanonicalStatus(p) === 'FAIL').length;
+    const review = displayProducts.filter(p => getProductCanonicalStatus(p) === 'REVIEW').length;
     const averageScore = total > 0
       ? Math.round(displayProducts.reduce((sum, p) => sum + (p.overallScore || 0), 0) / total)
       : 0;
 
-    return {
-      total,
-      passed,
-      failed,
-      pendingReview,
-      passRate,
-      averageScore
-    };
+    return { total, passed, failed, review, averageScore };
   }, [displayProducts]);
 
-  // 3. FILTERED PRODUCTS (Search, Date, and Status filtering)
+  // 3. Filtered products
   const filteredProducts = useMemo(() => {
     return displayProducts.filter(p => {
-      // Search matching (product name, brand, manufacturer, audit ID, barcode)
+      // Search matching
       const q = searchTerm.trim().toLowerCase();
       const matchesSearch = !q || (
         (p.productName && p.productName.toLowerCase().includes(q)) ||
@@ -67,14 +65,18 @@ export const RepositoryView: React.FC<RepositoryViewProps> = ({
         (p.barcode && p.barcode.toLowerCase().includes(q))
       );
 
-      // Status matching using unified getProductCanonicalStatus
+      // Status matching
       const normStatus = getProductCanonicalStatus(p);
-      const matchesStatus =
-        statusFilter === 'ALL' ||
-        (statusFilter === 'COMPLIANT' && normStatus === 'PASS') ||
-        (statusFilter === 'NON_COMPLIANT' && (normStatus === 'FAIL' || normStatus === 'REVIEW'));
+      const matchesStatus = (() => {
+        if (statusFilter === 'ALL') return true;
+        if (statusFilter === 'COMPLIANT') return normStatus === 'PASS';
+        if (statusFilter === 'REVIEW') return normStatus === 'REVIEW';
+        if (statusFilter === 'NON_COMPLIANT') return normStatus === 'FAIL';
+        if (statusFilter === 'UNABLE_TO_ASSESS') return normStatus === 'UNABLE_TO_ASSESS';
+        return true;
+      })();
 
-      // Date matching against product scannedAt timestamp
+      // Date matching
       const matchesDate = (() => {
         if (dateFilter === 'ALL') return true;
         if (!p.scannedAt) return true;
@@ -82,10 +84,7 @@ export const RepositoryView: React.FC<RepositoryViewProps> = ({
         if (isNaN(scanTimestamp)) return true;
 
         const now = Date.now();
-        // Benchmark from max of current time or latest scanned timestamp in dataset
-        const latestScan = Math.max(now, ...displayProducts.map(d => new Date(d.scannedAt || 0).getTime()));
-        const diffDays = (latestScan - scanTimestamp) / (1000 * 60 * 60 * 24);
-
+        const diffDays = (now - scanTimestamp) / (1000 * 60 * 60 * 24);
         if (dateFilter === '7_DAYS') return diffDays <= 7;
         if (dateFilter === '30_DAYS') return diffDays <= 30;
         if (dateFilter === 'QUARTER') return diffDays <= 90;
@@ -93,11 +92,14 @@ export const RepositoryView: React.FC<RepositoryViewProps> = ({
         return true;
       })();
 
-      return matchesSearch && matchesStatus && matchesDate;
-    });
-  }, [displayProducts, searchTerm, statusFilter, dateFilter]);
+      // Inspector matching
+      const matchesInspector = selectedInspector === 'ALL' || (p.inspectorName && p.inspectorName.trim() === selectedInspector);
 
-  // CSV Export Functionality
+      return matchesSearch && matchesStatus && matchesDate && matchesInspector;
+    });
+  }, [displayProducts, searchTerm, statusFilter, dateFilter, selectedInspector]);
+
+  // CSV Export
   const handleExport = () => {
     const headers = ['Audit ID', 'Product Name', 'Brand', 'Manufacturer', 'Score', 'Compliance Status', 'Inspection Date', 'Inspector Name'];
     const rows = filteredProducts.map(p => [
@@ -115,265 +117,237 @@ export const RepositoryView: React.FC<RepositoryViewProps> = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Disha_Audit_Logs_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `Disha_Inspection_Register_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
-    link.remove();
+    document.body.removeChild(link);
   };
 
-  const userDisplayName = user
-    ? user.role === 'ENFORCEMENT_OFFICER'
-      ? `${user.full_name} (Zone 4)`
-      : user.full_name
-    : 'Authorized Officer';
-
   return (
-    <div className="space-y-6 pb-12 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       
-      {/* Header & Filter Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      {/* ═══ Header Section (Section 10) ═══ */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#E2DFD8] pb-5">
         <div>
-          <div className="flex items-center gap-3">
-            <h2 className="font-headline-lg text-headline-lg text-primary font-bold mb-1">Reports & Audit Logs</h2>
-            {user && (
-              <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
-                <span className="material-symbols-outlined text-[15px]">badge</span>
-                {userDisplayName}
-              </span>
-            )}
-          </div>
-          <p className="font-body-md text-body-md text-text-muted">
-            Inspecting Authority: <strong className="text-text-main font-semibold">{userDisplayName}</strong> &bull; Comprehensive audit trail and compliance metrics.
+          <span className="section-tag">RECORDS / AUDIT</span>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#141413] mt-1">
+            Inspection register
+          </h1>
+          <p className="text-xs sm:text-sm text-[#6E6D67] mt-1">
+            Statutory repository of all completed packaged commodity audits, verified declarations, and enforcement notices.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          {/* Controlled Date Filter */}
-          <div className="relative w-full sm:w-auto">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">
-              calendar_today
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={handleExport}
+            disabled={filteredProducts.length === 0}
+            className="btn-secondary text-xs disabled:opacity-40"
+            title="Export filtered records to CSV"
+          >
+            <span className="material-symbols-outlined text-[16px]">file_download</span>
+            <span>Export CSV</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ═══ Summary Statistics Banner ═══ */}
+      <div className="disha-card grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[#E2DFD8] overflow-hidden">
+        <div className="p-4">
+          <span className="tech-tag">REGISTERED AUDITS</span>
+          <p className="text-2xl font-bold font-mono text-[#141413] mt-1">{stats.total}</p>
+        </div>
+        <div className="p-4">
+          <span className="tech-tag text-[#1B7F43]">COMPLIANT</span>
+          <p className="text-2xl font-bold font-mono text-[#1B7F43] mt-1">{stats.passed}</p>
+        </div>
+        <div className="p-4">
+          <span className="tech-tag text-[#B45309]">REVIEW REQUIRED</span>
+          <p className="text-2xl font-bold font-mono text-[#B45309] mt-1">{stats.review}</p>
+        </div>
+        <div className="p-4">
+          <span className="tech-tag text-[#C5281B]">INFRACTIONS</span>
+          <p className="text-2xl font-bold font-mono text-[#C5281B] mt-1">{stats.failed}</p>
+        </div>
+      </div>
+
+      {/* ═══ Compact Filter Controls ═══ */}
+      <div className="disha-card p-4 space-y-3">
+        {/* Row 1: Search and Status Pills */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+          {/* Search Box */}
+          <div className="relative w-full lg:w-80">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8F8E87] text-[16px]">
+              search
             </span>
+            <input
+              type="text"
+              placeholder="Search product, brand, packer, ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#FFFFFF] border border-[#E2DFD8] rounded-xs text-[#141413] placeholder:text-[#8F8E87] focus:outline-none focus:border-[#141413]"
+            />
+          </div>
+
+          {/* Status Filter Buttons */}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="text-[10px] font-mono uppercase text-[#8F8E87] mr-1">Status:</span>
+            {(
+              [
+                { key: 'ALL', label: 'All' },
+                { key: 'COMPLIANT', label: 'Compliant' },
+                { key: 'REVIEW', label: 'Review' },
+                { key: 'NON_COMPLIANT', label: 'Non-compliant' },
+                { key: 'UNABLE_TO_ASSESS', label: 'Unable to assess' }
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                className={`px-2.5 py-1 rounded-xs text-xs transition-colors cursor-pointer ${
+                  statusFilter === tab.key
+                    ? 'bg-[#141413] text-[#FFFFFF] font-semibold'
+                    : 'bg-[#FAF9F6] border border-[#E2DFD8] text-[#6E6D67] hover:bg-[#F2F0E8]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Row 2: Secondary Dropdown Filters (Date & Inspector) */}
+        <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-[#ECE9E2] text-xs text-[#6E6D67]">
+          {/* Date Range Selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-mono uppercase text-[#8F8E87]">Date:</span>
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value as DateFilterType)}
-              className="w-full sm:w-auto pl-9 pr-8 py-2 bg-surface-container-lowest border border-border-subtle rounded-lg font-body-md text-body-md text-text-main focus:outline-none focus:border-primary appearance-none cursor-pointer hover:bg-surface-container-low transition-colors shadow-2xs"
+              className="px-2 py-1 bg-[#FAF9F6] border border-[#E2DFD8] rounded-xs text-xs text-[#141413] focus:outline-none focus:border-[#141413]"
             >
-              <option value="30_DAYS">Last 30 Days</option>
-              <option value="7_DAYS">Last 7 Days</option>
-              <option value="QUARTER">This Quarter (90 Days)</option>
-              <option value="YTD">Year to Date</option>
               <option value="ALL">All Time</option>
+              <option value="7_DAYS">Last 7 Days</option>
+              <option value="30_DAYS">Last 30 Days</option>
+              <option value="QUARTER">Last 90 Days</option>
+              <option value="YTD">Year to Date</option>
             </select>
           </div>
 
-          {/* Working Export Button */}
-          <button
-            onClick={handleExport}
-            className="bg-primary text-white px-4 py-2 rounded-lg font-label-md text-label-md hover:bg-primary-container transition-colors shadow-2xs flex items-center gap-2 font-semibold cursor-pointer shrink-0"
-            title="Export filtered records to CSV"
-          >
-            <span className="material-symbols-outlined text-[18px]">download</span>
-            <span>Export</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Dynamic Aggregate Stats (Calculated from exact same central dataset) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        {/* 1. Overall Pass Rate */}
-        <div className="bg-surface-container-lowest border border-border-subtle rounded-lg p-5 flex items-center justify-between shadow-2xs">
-          <div>
-            <p className="font-label-md text-label-md text-text-muted mb-1 uppercase tracking-wider">Overall Pass Rate</p>
-            <h3 className="font-headline-xl text-headline-xl text-text-main font-bold">{stats.passRate}%</h3>
-            <p className="font-body-md text-body-md text-status-pass flex items-center gap-1 mt-1 font-semibold">
-              <span className="material-symbols-outlined text-[16px]">verified</span> {stats.passed} of {stats.total} passed inspections
-            </p>
-          </div>
-          <div className="w-14 h-14 rounded-full border-4 border-status-pass flex items-center justify-center relative bg-status-pass/5">
-            <span className="material-symbols-outlined text-status-pass text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-          </div>
-        </div>
-
-        {/* 2. Total Inspections */}
-        <div className="bg-surface-container-lowest border border-border-subtle rounded-lg p-5 flex items-center justify-between shadow-2xs">
-          <div>
-            <p className="font-label-md text-label-md text-text-muted mb-1 uppercase tracking-wider">Total Inspections</p>
-            <h3 className="font-headline-xl text-headline-xl text-text-main font-bold">{stats.total.toLocaleString()}</h3>
-            <p className="font-body-md text-body-md text-text-muted flex items-center gap-1 mt-1">
-              <span className="material-symbols-outlined text-[16px]">sync</span> {stats.pendingReview} pending review
-            </p>
-          </div>
-          <div className="w-14 h-14 rounded-full bg-primary-fixed flex items-center justify-center">
-            <span className="material-symbols-outlined text-primary text-[28px]">inventory_2</span>
-          </div>
-        </div>
-
-        {/* 3. Avg Compliance Score */}
-        <div className="bg-surface-container-lowest border border-border-subtle rounded-lg p-5 flex items-center justify-between shadow-2xs">
-          <div>
-            <p className="font-label-md text-label-md text-text-muted mb-1 uppercase tracking-wider">Avg Compliance Score</p>
-            <h3 className="font-headline-xl text-headline-xl text-text-main font-bold">{stats.averageScore}<span className="text-headline-md text-text-muted font-normal">/100</span></h3>
-            <p className="font-body-md text-body-md text-status-review flex items-center gap-1 mt-1 font-semibold">
-              <span className="material-symbols-outlined text-[16px]">analytics</span> {stats.failed} non-compliant &bull; {stats.pendingReview} in review
-            </p>
-          </div>
-          <div className="w-14 h-14 rounded-full border-4 border-status-review flex items-center justify-center font-bold text-base text-text-main bg-status-review/5">
-            {stats.averageScore}
-          </div>
-        </div>
-
-      </div>
-
-      {/* Search & Filter Bar */}
-      <div className="bg-surface-container-lowest border border-border-subtle p-4 rounded-lg flex flex-col md:flex-row justify-between gap-4">
-        
-        <div className="relative flex-1">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">search</span>
-          <input
-            type="text"
-            placeholder="Search product, manufacturer, brand, or audit ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-surface-container-low border border-border-subtle rounded-lg font-body-md text-body-md text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[16px]">close</span>
-            </button>
+          {/* Inspector Selector (if available) */}
+          {inspectorsList.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-mono uppercase text-[#8F8E87]">Inspector:</span>
+              <select
+                value={selectedInspector}
+                onChange={(e) => setSelectedInspector(e.target.value)}
+                className="px-2 py-1 bg-[#FAF9F6] border border-[#E2DFD8] rounded-xs text-xs text-[#141413] focus:outline-none focus:border-[#141413]"
+              >
+                <option value="ALL">All Inspectors</option>
+                {inspectorsList.map((insp) => (
+                  <option key={insp} value={insp}>{insp}</option>
+                ))}
+              </select>
+            </div>
           )}
-        </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setStatusFilter('ALL')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              statusFilter === 'ALL'
-                ? 'bg-primary text-white shadow-xs'
-                : 'bg-surface-container-low text-text-muted hover:bg-surface-container-high'
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setStatusFilter('COMPLIANT')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              statusFilter === 'COMPLIANT'
-                ? 'bg-status-pass text-white shadow-xs'
-                : 'bg-surface-container-low text-text-muted hover:bg-surface-container-high'
-            }`}
-          >
-            Compliant
-          </button>
-          <button
-            onClick={() => setStatusFilter('NON_COMPLIANT')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              statusFilter === 'NON_COMPLIANT'
-                ? 'bg-status-fail text-white shadow-xs'
-                : 'bg-surface-container-low text-text-muted hover:bg-surface-container-high'
-            }`}
-          >
-            Non-Compliant
-          </button>
+          <span className="ml-auto text-[11px] font-mono text-[#8F8E87]">
+            Showing {filteredProducts.length} of {displayProducts.length} records
+          </span>
         </div>
-
       </div>
 
-      {/* Audit Log Table */}
-      <div className="bg-surface-container-lowest border border-border-subtle rounded-lg overflow-hidden shadow-2xs">
-        <div className="p-4 border-b border-border-subtle bg-surface flex justify-between items-center">
-          <h3 className="font-headline-md text-headline-md text-text-main font-semibold">Audit Logs Detail</h3>
-          <span className="text-xs text-text-muted font-medium">Showing {filteredProducts.length} records</span>
-        </div>
-
+      {/* ═══ Inspection Register Table ═══ */}
+      <div className="disha-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="disha-table">
             <thead>
-              <tr className="border-b border-border-subtle bg-surface-container-low">
-                <th className="py-3 px-4 font-label-md text-label-md text-text-muted uppercase">Audit ID</th>
-                <th className="py-3 px-4 font-label-md text-label-md text-text-muted uppercase">Product Name</th>
-                <th className="py-3 px-4 font-label-md text-label-md text-text-muted uppercase">Manufacturer</th>
-                <th className="py-3 px-4 font-label-md text-label-md text-text-muted uppercase">Score</th>
-                <th className="py-3 px-4 font-label-md text-label-md text-text-muted uppercase">Compliance Rate</th>
-                <th className="py-3 px-4 font-label-md text-label-md text-text-muted uppercase">Status</th>
-                <th className="py-3 px-4 font-label-md text-label-md text-text-muted uppercase text-right">Actions</th>
+              <tr>
+                <th className="disha-th w-28">Audit ID</th>
+                <th className="disha-th">Product Description</th>
+                <th className="disha-th">Manufacturer</th>
+                <th className="disha-th w-24 text-center">Score</th>
+                <th className="disha-th w-28">Status</th>
+                <th className="disha-th w-32">Inspection Date</th>
+                <th className="disha-th w-24 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border-subtle">
-              {filteredProducts.map((p) => {
-                const normStatus = getProductCanonicalStatus(p);
-                const isPass = normStatus === 'PASS';
-                const isReview = normStatus === 'REVIEW';
+            <tbody>
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((p) => {
+                  const normStatus = getProductCanonicalStatus(p);
+                  const isPass = normStatus === 'PASS';
+                  const isReview = normStatus === 'REVIEW';
+                  const isFail = normStatus === 'FAIL';
+                  const formattedDate = p.scannedAt
+                    ? new Date(p.scannedAt).toLocaleDateString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric'
+                      })
+                    : '—';
 
-                return (
-                  <tr
-                    key={p.id}
-                    onClick={() => onSelectProduct(p)}
-                    className="hover:bg-surface-container-low transition-colors cursor-pointer h-12"
-                  >
-                    <td className="py-2.5 px-4 font-mono font-bold text-primary text-xs">
-                      {p.id}
-                    </td>
-                    <td className="py-2.5 px-4 font-body-md text-body-md text-text-main font-medium">
-                      {p.productName}
-                    </td>
-                    <td className="py-2.5 px-4 font-body-md text-body-md text-text-muted">
-                      {p.manufacturerName}
-                    </td>
-                    <td className="py-2.5 px-4 font-body-md text-body-md font-bold text-text-main">
-                      {p.overallScore}
-                    </td>
-                    <td className="py-2.5 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-full bg-surface-container-high rounded-full h-2 max-w-[100px]">
-                          <div
-                            className={`h-2 rounded-full ${
-                              isPass ? 'bg-status-pass' : isReview ? 'bg-status-review' : 'bg-status-fail'
-                            }`}
-                            style={{ width: `${p.overallScore}%` }}
-                          />
-                        </div>
-                        <span className="font-label-md text-label-md font-semibold">{p.overallScore}%</span>
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-4">
-                      {isPass ? (
-                        <span className="inline-flex items-center gap-1 bg-status-pass/10 text-status-pass px-2.5 py-1 rounded font-label-sm text-label-sm border border-status-pass/20 font-semibold">
-                          <span className="material-symbols-outlined text-[14px]">check_circle</span> Compliant
+                  return (
+                    <tr
+                      key={p.id}
+                      onClick={() => onSelectProduct(p)}
+                      className="disha-tr cursor-pointer"
+                    >
+                      <td className="disha-td font-mono font-bold text-xs text-[#D4381D]">
+                        {p.id}
+                      </td>
+
+                      <td className="disha-td">
+                        <p className="font-semibold text-[#141413] text-xs line-clamp-1">
+                          {p.productName}
+                        </p>
+                        <p className="text-[11px] text-[#8F8E87] mt-0.5">
+                          {p.brandName || 'Brand N/A'} &bull; {p.category || 'Packaged Commodity'}
+                        </p>
+                      </td>
+
+                      <td className="disha-td text-xs text-[#6E6D67]">
+                        <span className="line-clamp-1">{p.manufacturerName || 'N/A'}</span>
+                      </td>
+
+                      <td className="disha-td text-center font-mono font-bold">
+                        <span className={
+                          isPass ? 'text-[#1B7F43]' :
+                          isReview ? 'text-[#B45309]' :
+                          isFail ? 'text-[#C5281B]' : 'text-[#5A5955]'
+                        }>
+                          {p.overallScore ?? '—'}
                         </span>
-                      ) : isReview ? (
-                        <span className="inline-flex items-center gap-1 bg-status-review/10 text-status-review px-2.5 py-1 rounded font-label-sm text-label-sm border border-status-review/20 font-semibold">
-                          <span className="material-symbols-outlined text-[14px]">warning</span> Review Req
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 bg-status-fail/10 text-status-fail px-2.5 py-1 rounded font-label-sm text-label-sm border border-status-fail/20 font-semibold">
-                          <span className="material-symbols-outlined text-[14px]">error</span> Action Req
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-4 text-right space-x-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          generateInspectionPdfReport(p);
-                        }}
-                        title={`Download official inspection report PDF for ${p.productName}`}
-                        className="text-text-muted hover:text-primary p-1.5 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer"
-                        aria-label={`Download PDF report for ${p.id}`}
-                      >
-                        <span className="material-symbols-outlined text-[18px]">download</span>
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-              {filteredProducts.length === 0 && (
+                      </td>
+
+                      <td className="disha-td">
+                        {isPass && <span className="badge-pass">PASS</span>}
+                        {isReview && <span className="badge-review">REVIEW</span>}
+                        {isFail && <span className="badge-fail">FAIL</span>}
+                        {normStatus === 'UNABLE_TO_ASSESS' && <span className="badge-neutral">UNASSESSED</span>}
+                      </td>
+
+                      <td className="disha-td font-mono text-[11px] text-[#6E6D67]">
+                        {formattedDate}
+                      </td>
+
+                      <td className="disha-td text-right" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => generateInspectionPdfReport(p)}
+                          title={`Download official PDF report for ${p.productName}`}
+                          className="p-1 text-[#6E6D67] hover:text-[#141413] rounded-xs hover:bg-[#EFECE6] transition-colors cursor-pointer"
+                          aria-label="Download PDF"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">download</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-text-muted text-sm">
-                    No inspection audit records found matching your filters.
+                  <td colSpan={7} className="py-12 text-center text-xs text-[#8F8E87]">
+                    {searchTerm || statusFilter !== 'ALL' || dateFilter !== 'ALL'
+                      ? 'No inspection records match the selected filter criteria.'
+                      : 'No statutory inspection records found in the database.'}
                   </td>
                 </tr>
               )}
@@ -385,3 +359,5 @@ export const RepositoryView: React.FC<RepositoryViewProps> = ({
     </div>
   );
 };
+
+export default RepositoryView;
